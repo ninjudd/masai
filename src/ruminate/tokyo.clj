@@ -1,4 +1,4 @@
-(ns ruminate.tokyo-db
+(ns ruminate.tokyo
   (:use [useful :only [into-map]])
   (:require ruminate.db retro.core)
   (:import [tokyocabinet HDB]))
@@ -35,7 +35,7 @@
      (cons key (key-seq* hdb))
      nil)))
 
-(deftype TokyoDB [#^HDB hdb opts key-format]
+(deftype DB [#^HDB hdb opts key-format]
   ruminate.db/DB
 
   (open [db]
@@ -78,6 +78,6 @@
 
 (defn make [& opts]
   (let [opts (into-map opts)]
-    (TokyoDB.
+    (DB.
      (HDB.) opts
      (or (:key-format opts) #(bytes (.getBytes (str %)))))))

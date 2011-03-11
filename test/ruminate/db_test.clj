@@ -1,7 +1,7 @@
 (ns ruminate.db-test
   (:refer-clojure :exclude [get count sync])
   (:use clojure.test ruminate.db)
-  (:require [ruminate.tokyo-db :as tokyo]))
+  (:require [ruminate.tokyo :as tokyo]))
 
 (deftest byte-database
   (let [db (tokyo/make {:path "/tmp/ruminate-test-tokyo-db" :create true})]
