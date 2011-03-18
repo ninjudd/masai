@@ -20,7 +20,8 @@
           (if (:truncate opts) HDB/OTRUNC  0)
           (if (:tsync    opts) HDB/OTSYNC  0)
           (if (:nolock   opts) HDB/ONOLCK  0)
-          (if (:noblock  opts) HDB/OLCKNB  0))))
+          (if (:noblock  opts) HDB/OLCKNB  0)
+          (if (:prepop   opts) HDB/OPREPOP 0))))
 
 (defmacro check [form]
   `(or ~form
