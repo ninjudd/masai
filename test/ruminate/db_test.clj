@@ -4,7 +4,7 @@
   (:require [ruminate.tokyo :as tokyo]))
 
 (deftest byte-database
-  (let [db (tokyo/make {:path "/tmp/ruminate-test-tokyo-db" :create true})]
+  (let [db (tokyo/make {:path "/tmp/ruminate-test-tokyo-db" :create true :prepop true :mlock true})]
     (open db)
     (truncate! db)
 
