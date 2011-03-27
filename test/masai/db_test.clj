@@ -1,10 +1,10 @@
-(ns ruminate.db-test
+(ns masai.db-test
   (:refer-clojure :exclude [get count sync])
-  (:use clojure.test ruminate.db)
-  (:require [ruminate.tokyo :as tokyo]))
+  (:use clojure.test masai.db)
+  (:require [masai.tokyo :as tokyo]))
 
 (deftest byte-database
-  (let [db (tokyo/make {:path "/tmp/ruminate-test-tokyo-db" :create true :prepop true :mlock true})]
+  (let [db (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true :mlock true})]
     (open db)
     (truncate! db)
 

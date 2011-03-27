@@ -1,4 +1,4 @@
-(ns ruminate.db
+(ns masai.db
   (:refer-clojure :exclude [get]))
 
 (defprotocol DB "Key-value database."

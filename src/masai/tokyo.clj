@@ -1,6 +1,6 @@
-(ns ruminate.tokyo
+(ns masai.tokyo
   (:use [useful :only [into-map]])
-  (:require ruminate.db retro.core)
+  (:require masai.db retro.core)
   (:import [tokyocabinet HDB]))
 
 (def compress
@@ -38,7 +38,7 @@
      nil)))
 
 (deftype DB [#^HDB hdb opts key-format]
-  ruminate.db/DB
+  masai.db/DB
 
   (open [db]
     (let [path (:path opts)
