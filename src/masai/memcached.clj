@@ -20,6 +20,7 @@
    (let [fkey (key-format key)]
      (.append mdb (.getCas (.gets mdb fkey)) fkey val)))
   (inc! [db key i] (.incr mdb (key-format key) i))
+  (dec! [db key i] (.decr mdb (key-format key) i))
   (delete! [db key] (.delete mdb (key-format key))))
 
 (defn make [key-format & addresses]
