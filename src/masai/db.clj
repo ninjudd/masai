@@ -13,5 +13,6 @@
   (put!       [db key val])
   (append!    [db key val])
   (inc!       [db key i])
+  (dec!       [db key i])
   (delete!    [db key])
   (truncate!  [db]))
