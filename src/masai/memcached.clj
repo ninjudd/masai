@@ -27,7 +27,8 @@
      (.decr mdb (key-format key) (Math/abs i))
      (.incr mdb (key-format key) i)))
   
-  (delete! [db key] (.delete mdb (key-format key))))
+  (delete! [db key] (.delete mdb (key-format key)))
+  (truncate! [db] (.flush mdb)))
 
 (defn make [& {:keys [key-format addresses]
                :or {key-format identity addresses {"localhost" 11211}}}]
