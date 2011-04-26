@@ -19,11 +19,15 @@
    [db key val]
    (let [fkey (key-format key)]
      (.append mdb (.getCas (.gets mdb fkey)) fkey val)))
-  (inc! [db key i] (.incr mdb (key-format key) i))
-  (dec! [db key i] (.decr mdb (key-format key) i))
+  (inc!
+   [db key i]
+   (if (> 0 i)
+     (.decr mdb (key-format key) (Math/abs i))
+     (.incr mdb (key-format key) i)))
   (delete! [db key] (.delete mdb (key-format key))))
 
-(defn make [key-format & addresses]
+(defn make [& {:keys [key-format addresses]
+               :or {key-format identity addresses {"localhost" 11211}}}]
   (DB.
    (MemcachedClient.
     (for [[addr port] addresses]
