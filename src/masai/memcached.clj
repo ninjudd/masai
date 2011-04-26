@@ -7,8 +7,8 @@
 (deftype DB [#^MemcachedClient mdb key-format]
   masai.db/EphemeralDB
   
-  (add-expiry! [db key val exp] (.add mdb (key-format key) exp val))
-  (put-expiry! [db key val exp] (.set mdb (key-format key) exp val))
+  (add-expiry! [db key val exp] (.get (.add mdb (key-format key) exp val)))
+  (put-expiry! [db key val exp] (.get (.set mdb (key-format key) exp val)))
   
   masai.db/DB
   
@@ -20,7 +20,10 @@
   (append!
    [db key val]
    (let [fkey (key-format key)]
-     (.append mdb (.getCas (.gets mdb fkey)) fkey val)))
+     (if-let [appended (when-let [cas (.gets mdb key)]
+                         (.get (.append mdb (.getCas cas) fkey val)))]
+       appended
+       (masai.db/add! db key val))))
   
   (inc!
    [db key i]
@@ -28,8 +31,8 @@
      (.decr mdb (key-format key) (Math/abs i))
      (.incr mdb (key-format key) i)))
   
-  (delete! [db key] (.delete mdb (key-format key)))
-  (truncate! [db] (.flush mdb)))
+  (delete! [db key] (.get (.delete mdb (key-format key))))
+  (truncate! [db] (.get (.flush mdb))))
 
 (defn make [& opts]
   (let [{:keys [key-format addresses]
