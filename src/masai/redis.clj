@@ -1,0 +1,38 @@
+(ns masai.redis
+  (:require masai.db)
+  (:import redis.clients.jedis.Jedis))
+
+(deftype DB [#^Jedis rdb opts key-format]
+  masai.db/DB
+
+  (open
+   [db]
+   (when-let [pass (:password opts)]
+     (.auth rdb pass))
+   (.connect rdb))
+  (close [db] (.quit rdb))
+  (sync! [db] (.save rdb))
+  (get [db key] (.get rdb (key-format key)))
+  ;; Redis doesn't seem to support a generic 'length' command like tokyo's vsiz.
+  ;; Thus, this len function simply gets the length of a list key.
+  (len [db key] (.llen rdb (key-format key)))
+  (key-seq [db] (set (.keys rdb "*")))
+  (add! [db key val] (.setnx rdb (key-format key) val))
+  (put! [db key val] (.set rdb (key-format key) val))
+  (append! [db key val] (.append rdb (key-format key) val))
+  (inc!
+   [db key i]
+   (if (> 0 i)
+     (.decrBy rdb (key-format key) (long (Math/abs i)))
+     (.incrBy rdb (key-format key) (long i))))
+  (delete! [db key] (.del rdb (into-array String [(key-format key)])))
+  (truncate! [db] (.flushDB rdb)))
+
+(defn make [& {:keys [host port timeout key-format]
+               :or {host "localhost" port 6379 key-format identity}
+               :as opts}]
+  (DB.
+   (if timeout
+     (Jedis. host port timeout)
+     (Jedis. host port))
+   opts key-format))
