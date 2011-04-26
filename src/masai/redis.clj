@@ -1,4 +1,5 @@
 (ns masai.redis
+  (:use [useful :only [into-map]])
   (:require masai.db)
   (:import redis.clients.jedis.Jedis))
 
@@ -40,11 +41,13 @@
   (delete! [db key] (.del rdb (into-array String [(key-format key)])))
   (truncate! [db] (.flushDB rdb)))
 
-(defn make [& {:keys [host port timeout key-format]
-               :or {host "localhost" port 6379 key-format identity}
-               :as opts}]
-  (DB.
-   (if timeout
-     (Jedis. host port timeout)
-     (Jedis. host port))
-   opts key-format))
+(defn make [& opts]
+  (let [{:keys [host port timeout key-format]
+         :or {host "localhost" port 6379 key-format identity}
+         :as opts}
+         (into-map opts)]
+    (DB.
+     (if timeout
+       (Jedis. host port timeout)
+       (Jedis. host port))
+     opts key-format)))

@@ -1,4 +1,5 @@
 (ns masai.memcached
+  (:use [useful :only [into-map]])
   (:require masai.db)
   (:import net.spy.memcached.MemcachedClient
            [java.net InetSocketAddress InetAddress]))
@@ -30,10 +31,12 @@
   (delete! [db key] (.delete mdb (key-format key)))
   (truncate! [db] (.flush mdb)))
 
-(defn make [& {:keys [key-format addresses]
-               :or {key-format identity addresses {"localhost" 11211}}}]
-  (DB.
-   (MemcachedClient.
-    (for [[addr port] addresses]
-      (InetSocketAddress. (InetAddress/getByName addr) port)))
-   key-format))
+(defn make [& opts]
+  (let [{:keys [key-format addresses]
+         :or {key-format identity addresses {"localhost" 11211}}}
+        (into-map opts)]
+    (DB.
+     (MemcachedClient.
+      (for [[addr port] addresses]
+        (InetSocketAddress. (InetAddress/getByName addr) port)))
+     key-format)))
