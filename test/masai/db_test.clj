@@ -1,9 +1,11 @@
 (ns masai.db-test
   (:refer-clojure :exclude [get count sync])
   (:use clojure.test masai.db)
-  (:require [masai.tokyo :as tokyo]))
+  (:require [masai.tokyo :as tokyo]
+            [masai.memcached :as memcached]
+            [masai.redis :as redis]))
 
-(deftest byte-database
+(deftest tokyo-database
   (let [db (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true :mlock true})]
     (open db)
     (truncate! db)
@@ -71,4 +73,62 @@
       (is (= nil (get db "bar")))
       (is (= nil (get db "baz"))))
 
+    (close db)))
+
+(deftest memcache-database
+   (let [db (memcached/make)]
+    (truncate! db)
+
+    (testing "add! doesn't overwrite existing record"
+      (is (= nil (get db "foo")))
+      (is (= true (add! db "foo" "bar")))
+      (is (= "bar" (get db "foo")))
+      (is (= false (add! db "foo" "baz")))
+      (is (= "bar" (get db "foo"))))
+
+    (testing "put! overwrites existing record"
+      (is (= true (put! db "foo" "baz")))
+      (is (= "baz" (get db "foo"))))
+
+    (testing "append! to existing record"
+      (is (= true (append! db "foo" "bar")))
+      (is (= "bazbar" (get db "foo")))
+      (is (= true (append! db "foo" "!")))
+      (is (= "bazbar!" (get db "foo"))))
+
+    (testing "append! to nonexistent record"
+      (is (= true (append! db "baz" "1234")))
+      (is (= "1234" (get db "baz"))))
+
+    (testing "delete! record returns true on success"
+      (is (= true (delete! db "foo")))
+      (is (= nil (get db "foo")))
+      (is (= true (delete! db "baz")))
+      (is (= nil (get db "baz"))))
+
+    (testing "delete! nonexistent records returns false"
+      (is (= false (delete! db "foo")))
+      (is (= false (delete! db "bar"))))
+
+    #_(testing "len returns -1 for nonexistent records"
+      (is (= nil (get db "foo")))
+      (is (= -1 (len db "foo"))))
+
+    #_(testing "len returns the length for existing records"
+      (is (= true (put! db "foo" "")))
+      (is (= "" (get db "foo")))
+      (is (= 0 (len db "foo")))
+      (is (= true (put! db "bar" "12345")))
+      (is (= 5 (len db "bar")))
+      (is (= true (append! db "bar" "6789")))
+      (is (= 9 (len db "bar")))
+      (is (= true (add! db "baz" "..........")))
+      (is (= 10 (len db "baz"))))
+
+    (testing "truncate deletes all records"
+      (is (= true (truncate! db)))
+      (is (= nil (get db "foo")))
+      (is (= nil (get db "bar")))
+      (is (= nil (get db "baz"))))
+    
     (close db)))
