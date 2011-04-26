@@ -15,15 +15,18 @@
   (get [db key] (.get mdb (key-format key)))
   (add! [db key val] (masai.db/add-expiry! db key val 0))
   (put! [db key val] (masai.db/put-expiry! db key val 0))
+  
   (append!
    [db key val]
    (let [fkey (key-format key)]
      (.append mdb (.getCas (.gets mdb fkey)) fkey val)))
+  
   (inc!
    [db key i]
    (if (> 0 i)
      (.decr mdb (key-format key) (Math/abs i))
      (.incr mdb (key-format key) i)))
+  
   (delete! [db key] (.delete mdb (key-format key))))
 
 (defn make [& {:keys [key-format addresses]
