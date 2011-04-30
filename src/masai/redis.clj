@@ -3,6 +3,10 @@
   (:require masai.db)
   (:import redis.clients.jedis.Jedis))
 
+(defn i-to-b
+  "If input is 0, returns false. Otherwise, true."
+  [i] (not= i 0))
+
 (deftype DB [#^Jedis rdb opts key-format]
   masai.db/EphemeralDB
 
@@ -24,11 +28,15 @@
   (close [db] (.quit rdb))
   (sync! [db] (.save rdb))
   (get [db key] (.get rdb (key-format key)))
-  (len [db key] (count (masai.db/get db key)))
+  (len
+   [db key]
+   (if-let [record (masai.db/get db key)]
+     (count record)
+     -1))
   (key-seq [db] (set (.keys rdb "*")))
-  (add! [db key val] (.setnx rdb (key-format key) (str val)))
-  (put! [db key val] (.set rdb (key-format key) (str val)))
-  (append! [db key val] (.append rdb (key-format key) (str val)))
+  (add! [db key val] (i-to-b (.setnx rdb (key-format key) (str val))))
+  (put! [db key val] (i-to-b (.set rdb (key-format key) (str val))))
+  (append! [db key val] (i-to-b (.append rdb (key-format key) (str val))))
   
   (inc!
    [db key i]
@@ -36,8 +44,8 @@
      (.decrBy rdb (key-format key) (long (Math/abs i)))
      (.incrBy rdb (key-format key) (long i))))
   
-  (delete! [db key] (.del rdb (into-array String [(key-format key)])))
-  (truncate! [db] (.flushDB rdb)))
+  (delete! [db key] (i-to-b (.del rdb (into-array String [(key-format key)]))))
+  (truncate! [db] (= "OK" (.flushDB rdb))))
 
 (defn make [& opts]
   (let [{:keys [host port timeout key-format]
