@@ -25,7 +25,11 @@
        appended
        (masai.db/add! db key val))))
 
-  (len [db key] (count (str (masai.db/get db key))))
+  (len
+   [db key]
+   (if-let [record (masai.db/get db key)]
+     (count (str record))
+     -1))
   
   (inc!
    [db key i]
