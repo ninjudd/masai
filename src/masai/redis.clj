@@ -33,6 +33,7 @@
    (if-let [record (masai.db/get db key)]
      (count record)
      -1))
+  (exists? [db key] (.exists rdb key))
   (key-seq [db] (set (.keys rdb "*")))
   (add! [db key val] (i-to-b (.setnx rdb (key-format key) (str val))))
   (put! [db key val] (i-to-b (.set rdb (key-format key) (str val))))
