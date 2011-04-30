@@ -26,9 +26,9 @@
   (get [db key] (.get rdb (key-format key)))
   (len [db key] (count (masai.db/get db key)))
   (key-seq [db] (set (.keys rdb "*")))
-  (add! [db key val] (.setnx rdb (key-format key) val))
-  (put! [db key val] (.set rdb (key-format key) val))
-  (append! [db key val] (.append rdb (key-format key) val))
+  (add! [db key val] (.setnx rdb (key-format key) (str val)))
+  (put! [db key val] (.set rdb (key-format key) (str val)))
+  (append! [db key val] (.append rdb (key-format key) (str val)))
   
   (inc!
    [db key i]
