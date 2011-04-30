@@ -8,6 +8,7 @@
   (optimize!  [db])
   (get        [db key])
   (len        [db key])
+  (exists?    [db key])
   (key-seq    [db])
   (add!       [db key val])
   (put!       [db key val])
