@@ -30,6 +30,8 @@
    (if-let [record (masai.db/get db key)]
      (count (str record))
      -1))
+
+  (exists? [db key] (not= nil (masai.db/get db key)))
   
   (inc!
    [db key i]
