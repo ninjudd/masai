@@ -62,7 +62,7 @@
     
     (testing "exists? returns false if record is non-existent"
       (is (= nil (get db "baze")))
-      (is (exists? db "baze")))
+      (is (= false (exists? db "baze"))))
 
     (testing "a closed db appears empty"
       (close db)
@@ -128,7 +128,7 @@
     
     (testing "exists? returns false if record is non-existent"
       (is (= nil (get db "baze")))
-      (is (exists? db "baze")))
+      (is (= false (exists? db "baze"))))
     
     (testing "len returns the length for existing records"
       (is (= true (put! db "foo" "")))
@@ -205,7 +205,7 @@
 
     (testing "exists? returns false if record is non-existent"
       (is (= nil (get db "baze")))
-      (is (exists? db "baze")))
+      (is (= false (exists? db "baze"))))
 
     (testing "truncate deletes all records"
       (is (= true (truncate! db)))
