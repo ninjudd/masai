@@ -24,6 +24,8 @@
                          (.get (.append mdb (.getCas cas) fkey val)))]
        appended
        (masai.db/add! db key val))))
+
+  (len [db key] (count (str (masai.db/get db key))))
   
   (inc!
    [db key i]
