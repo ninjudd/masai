@@ -56,6 +56,14 @@
       (is (= true (add! db "baz" (.getBytes ".........."))))
       (is (= 10 (len db "baz"))))
 
+    (testing "exists? returns true if record exists"
+      (is (= true (add! db "bazr" "")))
+      (is (= true (exists? db "bazr"))))
+    
+    (testing "exists? returns false if record is non-existent"
+      (is (= nil (get db "baze")))
+      (is (exists? db "baze")))
+
     (testing "a closed db appears empty"
       (close db)
       (is (= nil (get db "bar")))
@@ -114,6 +122,14 @@
       (is (= nil (get db "foo")))
       (is (= -1 (len db "foo"))))
 
+    (testing "exists? returns true if record exists"
+      (is (= true (add! db "bazr" "")))
+      (is (= true (exists? db "bazr"))))
+    
+    (testing "exists? returns false if record is non-existent"
+      (is (= nil (get db "baze")))
+      (is (exists? db "baze")))
+    
     (testing "len returns the length for existing records"
       (is (= true (put! db "foo" "")))
       (is (= "" (get db "foo")))
@@ -182,6 +198,14 @@
       (is (= 9 (len db "bar")))
       (is (= true (add! db "baz" "..........")))
       (is (= 10 (len db "baz"))))
+
+    (testing "exists? returns true if record exists"
+      (is (= true (add! db "bazr" "")))
+      (is (= true (exists? db "bazr"))))
+
+    (testing "exists? returns false if record is non-existent"
+      (is (= nil (get db "baze")))
+      (is (exists? db "baze")))
 
     (testing "truncate deletes all records"
       (is (= true (truncate! db)))
