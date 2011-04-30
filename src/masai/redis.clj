@@ -24,9 +24,7 @@
   (close [db] (.quit rdb))
   (sync! [db] (.save rdb))
   (get [db key] (.get rdb (key-format key)))
-  ;; Redis doesn't seem to support a generic 'length' command like tokyo's vsiz.
-  ;; Thus, this len function simply gets the length of a list key.
-  (len [db key] (.llen rdb (key-format key)))
+  (len [db key] (count (masai.db/get db key)))
   (key-seq [db] (set (.keys rdb "*")))
   (add! [db key val] (.setnx rdb (key-format key) val))
   (put! [db key val] (.set rdb (key-format key) val))
