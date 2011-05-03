@@ -59,6 +59,7 @@
 
   (get [db key] (.get  hdb (key-format key)))
   (len [db key] (.vsiz hdb (key-format key)))
+  (exists? [db key] (not (= -1 (masai.db/len db key))))
 
   (key-seq [db]
     (.iterinit hdb)

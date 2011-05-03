@@ -6,7 +6,7 @@
             [masai.redis :as redis]))
 
 (deftest tokyo-database
-  (let [db (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true :mlock true})]
+  (let [db (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]
     (open db)
     (truncate! db)
 
@@ -57,7 +57,7 @@
       (is (= 10 (len db "baz"))))
 
     (testing "exists? returns true if record exists"
-      (is (= true (add! db "bazr" "")))
+      (is (= true (add! db "bazr" (.getBytes ""))))
       (is (= true (exists? db "bazr"))))
     
     (testing "exists? returns false if record is non-existent"
