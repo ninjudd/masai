@@ -1,13 +1,13 @@
 (ns masai.redis
   (:use [useful :only [into-map]])
   (:require masai.db)
-  (:import redis.clients.jedis.Jedis))
+  (:import redis.clients.jedis.BinaryJedis))
 
 (defn i-to-b
   "If input is 0, returns false. Otherwise, true."
   [i] (not= i 0))
 
-(deftype DB [#^Jedis rdb opts key-format]
+(deftype DB [#^BinaryJedis rdb opts key-format]
   masai.db/EphemeralDB
 
   (add-expiry!
@@ -15,7 +15,7 @@
    (masai.db/add! db key val)
    (.expire rdb key exp))
   
-  (put-expiry! [db key val exp] (.setex rdb key exp val))
+  (put-expiry! [db key val exp] (.setex rdb key exp (bytes val)))
   
   masai.db/DB
 
@@ -35,9 +35,9 @@
      -1))
   (exists? [db key] (.exists rdb key))
   (key-seq [db] (set (.keys rdb "*")))
-  (add! [db key val] (i-to-b (.setnx rdb (key-format key) (str val))))
-  (put! [db key val] (i-to-b (.set rdb (key-format key) (str val))))
-  (append! [db key val] (i-to-b (.append rdb (key-format key) (str val))))
+  (add! [db key val] (i-to-b (.setnx rdb (key-format key) (bytes val))))
+  (put! [db key val] (i-to-b (.set rdb (key-format key) (bytes val))))
+  (append! [db key val] (i-to-b (.append rdb (key-format key) (bytes val))))
   
   (inc!
    [db key i]
@@ -50,11 +50,11 @@
 
 (defn make [& opts]
   (let [{:keys [host port timeout key-format]
-         :or {host "localhost" port 6379 key-format identity}
+         :or {host "localhost" port 6379 key-format #(bytes (.getBytes (str %)))}
          :as opts}
          (into-map opts)]
     (DB.
      (if timeout
-       (Jedis. host port timeout)
-       (Jedis. host port))
+       (BinaryJedis. host port timeout)
+       (BinaryJedis. host port))
      opts key-format)))
