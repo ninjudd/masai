@@ -42,7 +42,7 @@
   (inc!
    [db key i]
    (if (> 0 i)
-     (.decrBy rdb (key-format key) (long (Math/abs i)))
+     (.decrBy rdb (key-format key) (long (Math/abs #^Integer i)))
      (.incrBy rdb (key-format key) (long i))))
   
   (delete! [db key] (i-to-b (.del rdb (into-array String [(key-format key)]))))

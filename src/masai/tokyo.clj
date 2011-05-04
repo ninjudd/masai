@@ -31,7 +31,7 @@
          ~HDB/ENOREC false
          (throw (java.io.IOException. (.errmsg ~'hdb) )))))
 
-(defn- key-seq* [hdb]
+(defn- key-seq* [^HDB hdb]
   (lazy-seq
    (if-let [key (.iternext2 hdb)]
      (cons key (key-seq* hdb))
@@ -45,7 +45,7 @@
           bnum (or (:bnum opts)  0)
           apow (or (:apow opts) -1)
           fpow (or (:fpow opts) -1)]
-      (.mkdirs (.getParentFile (java.io.File. path)))
+      (.mkdirs (.getParentFile (java.io.File. #^String path)))
       (check (.tune hdb bnum apow fpow (tflags opts)))
       (when-let [rcnum (:cache opts)]
         (check (.setcache hdb rcnum)))
@@ -57,20 +57,20 @@
   (sync!     [db] (.sync  hdb))
   (optimize! [db] (.optimize hdb))
 
-  (get [db key] (.get  hdb (key-format key)))
-  (len [db key] (.vsiz hdb (key-format key)))
+  (get [db key] (.get  hdb #^"[B" (key-format key)))
+  (len [db key] (.vsiz hdb #^"[B" (key-format key)))
   (exists? [db key] (not (= -1 (masai.db/len db key))))
 
   (key-seq [db]
     (.iterinit hdb)
     (key-seq* hdb))
 
-  (add!    [db key val] (check (.putkeep hdb (key-format key) (bytes val))))
-  (put!    [db key val] (check (.put     hdb (key-format key) (bytes val))))
-  (append! [db key val] (check (.putcat  hdb (key-format key) (bytes val))))
-  (inc!    [db key i]   (.addint hdb (key-format key) i))
+  (add!    [db key val] (check (.putkeep hdb #^"[B" (key-format key) (bytes val))))
+  (put!    [db key val] (check (.put     hdb #^"[B" (key-format key) (bytes val))))
+  (append! [db key val] (check (.putcat  hdb #^"[B" (key-format key) (bytes val))))
+  (inc!    [db key i]   (.addint hdb #^"[B" (key-format key) #^Integer i))
 
-  (delete!   [db key] (check (.out    hdb (key-format key))))
+  (delete!   [db key] (check (.out    hdb #^"[B" (key-format key))))
   (truncate! [db]     (check (.vanish hdb)))
 
   retro.core/Transactional

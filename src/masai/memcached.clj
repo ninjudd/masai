@@ -36,7 +36,7 @@
   (inc!
    [db key i]
    (if (> 0 i)
-     (.decr mdb (key-format key) (Math/abs i))
+     (.decr mdb (key-format key) (Math/abs #^Integer i))
      (.incr mdb (key-format key) i)))
   
   (delete! [db key] (.get (.delete mdb (key-format key))))
@@ -48,6 +48,6 @@
         (into-map opts)]
     (DB.
      (MemcachedClient.
-      (for [[addr port] addresses]
+      (for [[addr ^Integer port] addresses]
         (InetSocketAddress. (InetAddress/getByName addr) port)))
      key-format)))
