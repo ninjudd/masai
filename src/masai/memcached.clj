@@ -4,7 +4,9 @@
   (:import net.spy.memcached.MemcachedClient
            [java.net InetSocketAddress InetAddress]))
 
-(deftype DB [#^MemcachedClient mdb key-format]
+(defn key-format [^String s] (identity s))
+
+(deftype DB [^MemcachedClient mdb]
   masai.db/EphemeralDB
   
   (add-expiry! [db key val exp] (.get (.add mdb (key-format key) exp val)))
@@ -36,18 +38,17 @@
   (inc!
    [db key i]
    (if (> 0 i)
-     (.decr mdb (key-format key) (Math/abs #^Integer i))
+     (.decr mdb (key-format key) (Math/abs ^Integer i))
      (.incr mdb (key-format key) i)))
   
   (delete! [db key] (.get (.delete mdb (key-format key))))
   (truncate! [db] (.get (.flush mdb))))
 
 (defn make [& opts]
-  (let [{:keys [key-format addresses]
-         :or {key-format identity addresses {"localhost" 11211}}}
+  (let [{:keys [addresses]
+         :or {addresses {"localhost" 11211}}}
         (into-map opts)]
     (DB.
      (MemcachedClient.
       (for [[addr ^Integer port] addresses]
-        (InetSocketAddress. (InetAddress/getByName addr) port)))
-     key-format)))
+        (InetSocketAddress. (InetAddress/getByName addr) port))))))

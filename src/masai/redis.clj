@@ -7,7 +7,9 @@
   "If input is 0, returns false. Otherwise, true."
   [i] (not= i 0))
 
-(deftype DB [#^BinaryJedis rdb opts key-format]
+(defn key-format [^String s] (bytes (.getBytes (str s))))
+
+(deftype DB [^BinaryJedis rdb opts]
   masai.db/EphemeralDB
 
   (add-expiry!
@@ -42,19 +44,19 @@
   (inc!
    [db key i]
    (if (> 0 i)
-     (.decrBy rdb (key-format key) (long (Math/abs #^Integer i)))
+     (.decrBy rdb (key-format key) (long (Math/abs ^Integer i)))
      (.incrBy rdb (key-format key) (long i))))
   
   (delete! [db key] (i-to-b (.del rdb (into-array String [(key-format key)]))))
   (truncate! [db] (= "OK" (.flushDB rdb))))
 
 (defn make [& opts]
-  (let [{:keys [host port timeout key-format]
-         :or {host "localhost" port 6379 key-format #(bytes (.getBytes (str %)))}
+  (let [{:keys [host port timeout]
+         :or {host "localhost" port 6379}
          :as opts}
          (into-map opts)]
     (DB.
      (if timeout
        (BinaryJedis. host port timeout)
        (BinaryJedis. host port))
-     opts key-format)))
+     opts)))

@@ -37,7 +37,9 @@
      (cons key (key-seq* hdb))
      nil)))
 
-(deftype DB [#^HDB hdb opts key-format]
+(defn key-format [^String s] (bytes (.getBytes (str s))))
+
+(deftype DB [^HDB hdb opts]
   masai.db/DB
 
   (open [db]
@@ -45,7 +47,7 @@
           bnum (or (:bnum opts)  0)
           apow (or (:apow opts) -1)
           fpow (or (:fpow opts) -1)]
-      (.mkdirs (.getParentFile (java.io.File. #^String path)))
+      (.mkdirs (.getParentFile (java.io.File. ^String path)))
       (check (.tune hdb bnum apow fpow (tflags opts)))
       (when-let [rcnum (:cache opts)]
         (check (.setcache hdb rcnum)))
@@ -57,20 +59,20 @@
   (sync!     [db] (.sync  hdb))
   (optimize! [db] (.optimize hdb))
 
-  (get [db key] (.get  hdb #^"[B" (key-format key)))
-  (len [db key] (.vsiz hdb #^"[B" (key-format key)))
+  (get [db key] (.get  hdb ^"[B" (key-format key)))
+  (len [db key] (.vsiz hdb ^"[B" (key-format key)))
   (exists? [db key] (not (= -1 (masai.db/len db key))))
 
   (key-seq [db]
     (.iterinit hdb)
     (key-seq* hdb))
 
-  (add!    [db key val] (check (.putkeep hdb #^"[B" (key-format key) (bytes val))))
-  (put!    [db key val] (check (.put     hdb #^"[B" (key-format key) (bytes val))))
-  (append! [db key val] (check (.putcat  hdb #^"[B" (key-format key) (bytes val))))
-  (inc!    [db key i]   (.addint hdb #^"[B" (key-format key) #^Integer i))
+  (add!    [db key val] (check (.putkeep hdb ^"[B" (key-format key) (bytes val))))
+  (put!    [db key val] (check (.put     hdb ^"[B" (key-format key) (bytes val))))
+  (append! [db key val] (check (.putcat  hdb ^"[B" (key-format key) (bytes val))))
+  (inc!    [db key i]   (.addint hdb ^"[B" (key-format key) ^Integer i))
 
-  (delete!   [db key] (check (.out    hdb #^"[B" (key-format key))))
+  (delete!   [db key] (check (.out    hdb ^"[B" (key-format key))))
   (truncate! [db]     (check (.vanish hdb)))
 
   retro.core/Transactional
@@ -81,6 +83,4 @@
 
 (defn make [& opts]
   (let [opts (into-map opts)]
-    (DB.
-     (HDB.) opts
-     (or (:key-format opts) #(bytes (.getBytes (str %)))))))
+    (DB.(HDB.) opts)))
