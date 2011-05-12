@@ -5,4 +5,4 @@
                  [clojure-useful "0.3.3"]
                  [retro "0.5.0"]
                  [spy/memcached "2.4rc1"]
-                 [redis.clients/jedis "1.5.2"]])
+                 [org.clojars.raynes/jedis "2.0.0-SNAPSHOT"]])

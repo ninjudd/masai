@@ -1,5 +1,6 @@
 (ns masai.redis
-  (:use [useful :only [into-map]])
+  (:use [useful :only [into-map]]
+        [clojure.stacktrace :only [root-cause]])
   (:require masai.db)
   (:import redis.clients.jedis.BinaryJedis))
 
@@ -7,7 +8,7 @@
   "If input is 0, returns false. Otherwise, true."
   [i] (not= i 0))
 
-(defn key-format [^String s] (bytes (.getBytes (str s))))
+(defn key-format [^String s] (bytes (.getBytes s)))
 
 (deftype DB [^BinaryJedis rdb opts]
   masai.db/EphemeralDB
@@ -25,17 +26,28 @@
    [db]
    (when-let [pass (:password opts)]
      (.auth rdb pass))
-   (.connect rdb))
+   (.disconnect rdb))
   
-  (close [db] (.quit rdb))
+  (close
+   [db]
+   (.quit rdb))
+  
   (sync! [db] (.save rdb))
-  (get [db key] (.get rdb (key-format key)))
+  
+  (get
+   [db key]
+   (try
+     (.get rdb (key-format key))
+     (catch redis.clients.jedis.exceptions.JedisConnectionException e
+       (when-not (re-find #"closed the connection|Broken pipe" (.getMessage e))
+         (throw e)))))
+  
   (len
    [db key]
    (if-let [record (masai.db/get db key)]
      (count record)
      -1))
-  (exists? [db key] (.exists rdb key))
+  (exists? [db key] (.exists rdb (key-format key)))
   (key-seq [db] (set (.keys rdb "*")))
   (add! [db key val] (i-to-b (.setnx rdb (key-format key) (bytes val))))
   (put! [db key val] (i-to-b (.set rdb (key-format key) (bytes val))))
@@ -47,7 +59,7 @@
      (.decrBy rdb (key-format key) (long (Math/abs ^Integer i)))
      (.incrBy rdb (key-format key) (long i))))
   
-  (delete! [db key] (i-to-b (.del rdb (into-array String [(key-format key)]))))
+  (delete! [db key] (i-to-b (.del rdb (into-array [(key-format key)]))))
   (truncate! [db] (= "OK" (.flushDB rdb))))
 
 (defn make [& opts]
