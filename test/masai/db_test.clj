@@ -5,15 +5,12 @@
             [masai.memcached :as memcached]
             [masai.redis :as redis]))
 
-(def redis (redis/make))
-(def tokyo (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true}))
-
-(open tokyo)
-
-(map truncate! [redis tokyo])
-
 (deftest tests
-  (doseq [db [redis tokyo]]
+  (doseq [db [(redis/make)
+              (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]]
+    (open db)
+    (truncate! db)
+    
     (testing "add! doesn't overwrite existing record"
       (is (= nil (get db "foo")))
       (is (= true (add! db "foo" (.getBytes "bar"))))
