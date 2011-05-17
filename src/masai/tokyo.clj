@@ -1,3 +1,4 @@
+;; ## Tokyo Cabinet Backend
 (ns masai.tokyo
   (:use [useful :only [into-map]])
   (:require masai.db retro.core)
@@ -8,12 +9,16 @@
    :bzip    HDB/TBZIP
    :tcbs    HDB/TTCBS})
 
-(defn- tflags [opts]
+(defn- tflags
+  "Check for T flags in opts and returns the corresponding tokyo flag."
+  [opts]
   (bit-or
    (if (:large opts) HDB/TLARGE 0)
    (or (compress (:compress opts)) 0)))
 
-(defn- oflags [opts]
+(defn- oflags
+  "Check for o flags in opts and return the corresponding tokyo flag"
+  [opts]
   (reduce bit-or 0
     (list (if (:readonly opts) HDB/OREADER HDB/OWRITER)
           (if (:create   opts) HDB/OCREAT  0)
@@ -24,14 +29,18 @@
           (if (:prepop   opts) HDB/OPREPOP 0)
           (if (:mlock    opts) HDB/OMLOCK  0))))
 
-(defmacro check [form]
+(defmacro check
+  "Run a form and if it returns a false value, check for e codes. Throw
+   an IOException if no e codes are present."
+  [form]
   `(or ~form
        (case (.ecode ~'hdb)
          ~HDB/EKEEP  false
          ~HDB/ENOREC false
          (throw (java.io.IOException. (.errmsg ~'hdb) )))))
 
-(defn- key-seq* [^HDB hdb]
+(defn- key-seq*
+  "Get a truly lazy sequence of the keys in the database." [^HDB hdb]
   (lazy-seq
    (if-let [key (.iternext2 hdb)]
      (cons key (key-seq* hdb))
@@ -81,6 +90,8 @@
   (txn-commit   [db] (.trancommit hdb))
   (txn-rollback [db] (.tranabort  hdb)))
 
-(defn make [& opts]
+(defn make
+  "Create an instance of DB with Tokyo Cabinet as the backend."
+  [& opts]
   (let [opts (into-map opts)]
     (DB.(HDB.) opts)))

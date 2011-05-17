@@ -1,3 +1,8 @@
+;; ## Redis Backend
+;; This is a Redis backend for Masai. Under the hood, it uses
+;; [Jedis](https://github.com/xetorthio/jedis) under the hood for
+;; communicating with Redis.
+
 (ns masai.redis
   (:use [useful :only [into-map]]
         [clojure.stacktrace :only [root-cause]])
@@ -8,9 +13,15 @@
   "If input is 0, returns false. Otherwise, true."
   [i] (not= i 0))
 
-(defn key-format [^String s] (bytes (.getBytes s)))
+(defn- key-format [^String s] (bytes (.getBytes s)))
 
-(defmacro if-connected [db & body]
+;; When there isn't an active connection, Jedis throws errors when methods
+;; are called. We don't want this happening in masai so we will check to
+;; make sure there is an active connection ourselves before excuting read
+;; methods.
+(defmacro if-connected
+  "Same as if with a predicate that checks for a redis connection."
+  [db & body]
   `(if (.isConnected ~db) ~@body))
 
 (deftype DB [^BinaryJedis rdb opts]
@@ -28,6 +39,9 @@
   (open [db]
     (when-let [pass (:password opts)]
       (.auth rdb pass))
+    ;; We have to call `disconnect` before we call connect because
+    ;; Jedis's `quit` method leaves the socket in a bad state and
+    ;; disconnect cleans up.
     (.disconnect rdb)
     (.connect rdb))
 
@@ -72,7 +86,9 @@
   (truncate! [db]
     (= "OK" (.flushDB rdb))))
 
-(defn make [& opts]
+(defn make
+  "Create an instance of DB with redis as the backend."
+  [& opts]
   (let [{:keys [host port timeout]
          :or {host "localhost" port 6379}
          :as opts}
