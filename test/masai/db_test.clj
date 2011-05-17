@@ -1,13 +1,16 @@
 (ns masai.db-test
   (:refer-clojure :exclude [get count sync])
   (:use clojure.test masai.db)
-  (:require [masai.tokyo :as tokyo]))
+  (:require [masai.tokyo :as tokyo]
+            [masai.memcached :as memcached]
+            [masai.redis :as redis]))
 
-(deftest byte-database
-  (let [db (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true :mlock true})]
+(deftest tests
+  (doseq [db [(redis/make)
+              (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]]
     (open db)
     (truncate! db)
-
+    
     (testing "add! doesn't overwrite existing record"
       (is (= nil (get db "foo")))
       (is (= true (add! db "foo" (.getBytes "bar"))))
@@ -54,10 +57,20 @@
       (is (= true (add! db "baz" (.getBytes ".........."))))
       (is (= 10 (len db "baz"))))
 
+    (testing "exists? returns true if record exists"
+      (is (= true (add! db "bazr" (.getBytes ""))))
+      (is (= true (exists? db "bazr"))))
+    
+    (testing "exists? returns false if record is non-existent"
+      (is (= nil (get db "baze")))
+      (is (= false (exists? db "baze"))))
+
     (testing "a closed db appears empty"
       (close db)
       (is (= nil (get db "bar")))
-      (is (= nil (get db "baz"))))
+      (is (= nil (get db "baz")))
+      (is (= -1 (len db "baz")))
+      (is (= false (exists? db "baz"))))
 
     (testing "can reopen a closed db"
       (open db)
