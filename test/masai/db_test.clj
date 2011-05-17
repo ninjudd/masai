@@ -68,7 +68,9 @@
     (testing "a closed db appears empty"
       (close db)
       (is (= nil (get db "bar")))
-      (is (= nil (get db "baz"))))
+      (is (= nil (get db "baz")))
+      (is (= -1 (len db "baz")))
+      (is (= false (exists? db "baz"))))
 
     (testing "can reopen a closed db"
       (open db)
