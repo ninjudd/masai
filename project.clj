@@ -5,4 +5,7 @@
                  [retro "0.5.0"]]
   :dev-dependencies [[tokyocabinet "1.24.1-SNAPSHOT"]
                      [spy/memcached "2.4rc1"]
-                     [org.clojars.raynes/jedis "2.0.0-SNAPSHOT"]])
+                     [org.clojars.raynes/jedis "2.0.0-SNAPSHOT"]
+                     [clojure-contrib "1.2.0"]
+                     [marginalia "0.5.1"]]
+  :tasks [marginalia.tasks])
