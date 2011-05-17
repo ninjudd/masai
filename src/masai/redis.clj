@@ -17,7 +17,8 @@
     (masai.db/add! db key val)
     (.expire rdb key exp))
 
-  (put-expiry! [db key val exp] (.setex rdb key exp (bytes val)))
+  (put-expiry! [db key val exp]
+    (.setex rdb key exp (bytes val)))
 
   masai.db/DB
 
@@ -31,7 +32,8 @@
     (.disconnect rdb)
     (.quit rdb))
 
-  (sync! [db] (.save rdb))
+  (sync! [db]
+    (.save rdb))
 
   (get [db key]
     (try
@@ -51,14 +53,9 @@
   (key-seq [db]
     (set (.keys rdb "*")))
 
-  (add! [db key val]
-    (i-to-b (.setnx rdb (key-format key) (bytes val))))
-
-  (put! [db key val]
-    (i-to-b (.set rdb (key-format key) (bytes val))))
-
-  (append! [db key val]
-    (i-to-b (.append rdb (key-format key) (bytes val))))
+  (add!    [db key val] (i-to-b (.setnx  rdb (key-format key) (bytes val))))
+  (put!    [db key val] (i-to-b (.set    rdb (key-format key) (bytes val))))
+  (append! [db key val] (i-to-b (.append rdb (key-format key) (bytes val))))
 
   (inc! [db key i]
     (if (> 0 i)
