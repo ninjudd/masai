@@ -46,9 +46,7 @@
      (cons key (key-seq* hdb))
      nil)))
 
-(defn key-format [^String s] (bytes (.getBytes (str s))))
-
-(deftype DB [^HDB hdb opts]
+(deftype DB [^HDB hdb opts key-format]
   masai.db/DB
 
   (open [db]
@@ -93,5 +91,8 @@
 (defn make
   "Create an instance of DB with Tokyo Cabinet as the backend."
   [& opts]
-  (let [opts (into-map opts)]
-    (DB.(HDB.) opts)))
+  (let [{:keys [key-format]
+         :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
+         :as opts}
+        (into-map opts)]
+    (DB. (HDB.) opts key-format)))

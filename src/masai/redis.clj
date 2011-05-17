@@ -13,8 +13,6 @@
   "If input is 0, returns false. Otherwise, true."
   [i] (not= i 0))
 
-(defn- key-format [^String s] (bytes (.getBytes s)))
-
 ;; When there isn't an active connection, Jedis throws errors when methods
 ;; are called. We don't want this happening in masai so we will check to
 ;; make sure there is an active connection ourselves before excuting read
@@ -24,7 +22,7 @@
   [db & body]
   `(if (.isConnected ~db) ~@body))
 
-(deftype DB [^BinaryJedis rdb opts]
+(deftype DB [^BinaryJedis rdb opts key-format]
   masai.db/EphemeralDB
 
   (add-expiry! [db key val exp]
@@ -89,12 +87,13 @@
 (defn make
   "Create an instance of DB with redis as the backend."
   [& opts]
-  (let [{:keys [host port timeout]
-         :or {host "localhost" port 6379}
+  (let [{:keys [host port timeout key-format]
+         :or {host "localhost" port 6379
+              key-format (fn [^String s] (bytes (.getBytes s)))}
          :as opts}
          (into-map opts)]
     (DB.
      (if timeout
        (BinaryJedis. host port timeout)
        (BinaryJedis. host port))
-     opts)))
+     opts key-format)))
