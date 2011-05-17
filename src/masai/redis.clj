@@ -10,6 +10,9 @@
 
 (defn key-format [^String s] (bytes (.getBytes s)))
 
+(defmacro if-connected [db & body]
+  `(if (.isConnected ~db) ~@body))
+
 (deftype DB [^BinaryJedis rdb opts]
   masai.db/EphemeralDB
 
@@ -29,26 +32,27 @@
     (.connect rdb))
 
   (close [db]
-    (.disconnect rdb)
-    (.quit rdb))
+    (.quit rdb)
+    (.disconnect rdb))
 
   (sync! [db]
     (.save rdb))
 
   (get [db key]
-    (try
-      (.get rdb (key-format key))
-      (catch redis.clients.jedis.exceptions.JedisConnectionException e
-        (when-not (re-find #"closed the connection|Broken pipe" (.getMessage e))
-          (throw e)))))
+    (if-connected rdb
+      (.get rdb (key-format key))))
 
   (len [db key]
-    (if-let [record (masai.db/get db key)]
-      (count record)
+    (if-connected rdb   
+      (if-let [record (masai.db/get db key)]
+        (count record)
+        -1)
       -1))
 
   (exists? [db key]
-    (.exists rdb (key-format key)))
+    (if-connected rdb
+      (.exists rdb (key-format key))
+      false))
 
   (key-seq [db]
     (set (.keys rdb "*")))
