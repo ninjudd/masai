@@ -1,5 +1,13 @@
+;; ## DB Protocol
 (ns masai.db
   (:refer-clojure :exclude [get]))
+
+;; Instead of having separate, incompatible libraries to interface with
+;; different key-value stores, Masai opts to define a common and simple
+;; interface to implement for all of them. DB defines the basic things
+;; that you need to work with key-value stores, and little more. It
+;; isn't meant to be a comprehensive interface to all of them, but just
+;; a common interface.
 
 (defprotocol DB "Key-value database."
   (open [db])
@@ -20,6 +28,9 @@
                           values of i by decrementing.")
   (delete!    [db key] "Delete a record from the database.")
   (truncate!  [db] "Flush all records from the database."))
+
+;; Some key-value stores have expiring `add` and `put` methods. Those
+;; databases should implement EphemeralDB.
 
 (defprotocol EphemeralDB
   (add-expiry! [db key val exp] "Add a record to the database with an expiration
