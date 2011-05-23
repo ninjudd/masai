@@ -40,3 +40,20 @@ Get stuff:
 And even delete stuff:
 
     (delete! db "foo")
+    
+## Cereal wrapper
+
+Masai also has a wrapper around the DB that uses [cereal](http://github.com/Raynes/cereal) for serialization. Here is how you can use it along with the redis backend:
+
+    (ns my.ns
+      (:use [masai cereal redis])
+      (:require [cereal.java :as j])
+      
+    (def db (make))  ; A default Redis DB instance.
+    (def f (j/make)) ; Cereal's Java serialization format.
+    
+    (with-db db f 
+      (add! "foo" "bar") ; Adds to the DB with "bar" being serialized by cereal.
+      (get "foo")) ; Fetches "foo" from the DB, deserializing it and returning it.
+
+`with-db` will automatically call `open` before running your code and `close` when it's finished. It calls `close` in a try/finally so the DB will always be closed no matter what.
