@@ -2,7 +2,8 @@
   :description "Key-value database for Clojure with pluggable backends."
   :dependencies [[clojure "1.2.0"]
                  [clojure-useful "0.3.8"]
-                 [retro "0.5.0"]]
+                 [retro "0.5.0"]
+                 [cereal "0.1.1"]]
   :dev-dependencies [[tokyocabinet "1.24.1-SNAPSHOT"]
                      [spy/memcached "2.4rc1"]
                      [org.clojars.raynes/jedis "2.0.0-SNAPSHOT"]
