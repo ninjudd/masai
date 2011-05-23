@@ -10,7 +10,7 @@
 ;; a common interface.
 
 (defprotocol DB "Key-value database."
-  (open [db])
+  (open       [db] "Open the database.")
   (close      [db] "Close the database.")
   (sync!      [db] "Sync the database to the disk.")
   (optimize!  [db] "Optimize the database.")
