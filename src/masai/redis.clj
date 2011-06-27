@@ -4,7 +4,7 @@
 ;; communicating with Redis.
 
 (ns masai.redis
-  (:use [useful :only [into-map]]
+  (:use [useful.map :only [into-map]]
         [clojure.stacktrace :only [root-cause]])
   (:require masai.db)
   (:import redis.clients.jedis.BinaryJedis))
@@ -55,7 +55,7 @@
       (.get rdb (key-format key))))
 
   (len [db key]
-    (if-connected rdb   
+    (if-connected rdb
       (if-let [record (masai.db/get db key)]
         (count record)
         -1)

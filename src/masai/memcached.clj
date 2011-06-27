@@ -1,5 +1,5 @@
 (ns masai.memcached
-  (:use [useful :only [into-map]])
+  (:use [useful.map :only [into-map]])
   (:require masai.db)
   (:import net.spy.memcached.MemcachedClient
            [java.net InetSocketAddress InetAddress]))

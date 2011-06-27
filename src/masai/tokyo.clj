@@ -1,6 +1,6 @@
 ;; ## Tokyo Cabinet Backend
 (ns masai.tokyo
-  (:use [useful :only [into-map]])
+  (:use [useful.map :only [into-map]])
   (:require masai.db retro.core)
   (:import [tokyocabinet HDB]))
 
