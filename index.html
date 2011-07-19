@@ -2526,8 +2526,8 @@ $(document).ready(function() {
     ul.css('margin-top', '0px')
 
 })
-</script><title>masai -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">masai</h1><h2 class="project-version">0.5.1-SNAPSHOT</h2><br /><p>Key-value database for Clojure with pluggable backends.</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.2.0</td></tr><tr><td class="dep-name">clojure-useful</td><td class="dotted"><hr /></td><td class="dep-version">0.3.8</td></tr><tr><td class="dep-name">retro</td><td class="dotted"><hr /></td><td class="dep-version">0.5.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">tokyocabinet</td><td class="dotted"><hr /></td><td class="dep-version">1.24.1-SNAPSHOT</td></tr><tr><td class="dep-name">spy/memcached</td><td class="dotted"><hr /></td><td class="dep-version">2.4rc1</td></tr><tr><td class="dep-name">org.clojars.raynes/jedis</td><td class="dotted"><hr /></td><td class="dep-version">2.0.0-SNAPSHOT</td></tr><tr><td class="dep-name">clojure-contrib</td><td class="dotted"><hr /></td><td class="dep-version">1.2.0</td></tr><tr><td class="dep-name">marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.5.1</td></tr></table></div><div class="plugins"><h3>cake plugin namespaces</h3><ul><li>marginalia.tasks</li></ul></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#masai.core">masai.core</a></li><li><a href="#masai.db">masai.db</a></li><li><a href="#masai.memcached">masai.memcached</a></li><li><a href="#masai.redis">masai.redis</a></li><li><a href="#masai.tokyo">masai.tokyo</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#masai.core" name="masai.core"><h1 class="project-name">masai.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</script><title>masai -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">masai</h1><h2 class="project-version">0.5.2</h2><br /><p>Key-value database for Clojure with pluggable backends.</p>
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.2.0</td></tr><tr><td class="dep-name">useful</td><td class="dotted"><hr /></td><td class="dep-version">0.4.0</td></tr><tr><td class="dep-name">retro</td><td class="dotted"><hr /></td><td class="dep-version">0.5.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">tokyocabinet</td><td class="dotted"><hr /></td><td class="dep-version">1.24.1-SNAPSHOT</td></tr><tr><td class="dep-name">spy/memcached</td><td class="dotted"><hr /></td><td class="dep-version">2.4rc1</td></tr><tr><td class="dep-name">org.clojars.raynes/jedis</td><td class="dotted"><hr /></td><td class="dep-version">2.0.0-SNAPSHOT</td></tr><tr><td class="dep-name">clojure-contrib</td><td class="dotted"><hr /></td><td class="dep-version">1.2.0</td></tr><tr><td class="dep-name">org.clojars.flatland/cake-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.6.1</td></tr></table></div><div class="plugins"><h3>cake plugin namespaces</h3><ul><li>cake-marginalia.tasks</li></ul></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#masai.core">masai.core</a></li><li><a href="#masai.db">masai.db</a></li><li><a href="#masai.memcached">masai.memcached</a></li><li><a href="#masai.redis">masai.redis</a></li><li><a href="#masai.tokyo">masai.tokyo</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#masai.core" name="masai.core"><h1 class="project-name">masai.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(ns masai.core)</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#masai.db" name="masai.db"><h1 class="project-name">masai.db</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><h2>DB Protocol</h2>
 </td><td class="codes" /><pre class="brush: clojure">(ns masai.db
   (:refer-clojure :exclude [get]))</pre></tr><tr><td class="docs"><p>Instead of having separate, incompatible libraries to interface with
@@ -2564,7 +2564,7 @@ databases should implement EphemeralDB.</p>
   (put-expiry! [db key val exp] &quot;Puts a record into the database with an expiration
                                  time. Overwrites the record if it already exists.&quot;))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#masai.memcached" name="masai.memcached"><h1 class="project-name">masai.memcached</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(ns masai.memcached
-  (:use [useful :only [into-map]])
+  (:use [useful.map :only [into-map]])
   (:require masai.db)
   (:import net.spy.memcached.MemcachedClient
            [java.net InetSocketAddress InetAddress]))</pre></tr><tr><td class="docs">
@@ -2614,13 +2614,12 @@ databases should implement EphemeralDB.</p>
 communicating with Redis.</p>
 </td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(ns masai.redis
-  (:use [useful :only [into-map]]
+  (:use [useful.map :only [into-map]]
         [clojure.stacktrace :only [root-cause]])
   (:require masai.db)
   (:import redis.clients.jedis.BinaryJedis))</pre></tr><tr><td class="docs"><p>If input is 0, returns false. Otherwise, true.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn i-to-b
-  [i] (not= i 0))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn- key-format [^String s] (bytes (.getBytes s)))</pre></tr><tr><td class="docs"><p>Same as if with a predicate that checks for a redis connection.</p>
+  [i] (not= i 0))</pre></tr><tr><td class="docs"><p>Same as if with a predicate that checks for a redis connection.</p>
 
 <p>When there isn't an active connection, Jedis throws errors when methods
 are called. We don't want this happening in masai so we will check to
@@ -2629,7 +2628,7 @@ methods.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro if-connected
   [db &amp; body]
   `(if (.isConnected ~db) ~@body))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(deftype DB [^BinaryJedis rdb opts]
+</td><td class="codes" /><pre class="brush: clojure">(deftype DB [^BinaryJedis rdb opts key-format]
   masai.db/EphemeralDB
   (add-expiry! [db key val exp]
     (masai.db/add! db key val)
@@ -2654,7 +2653,7 @@ methods.</p>
     (if-connected rdb
       (.get rdb (key-format key))))
   (len [db key]
-    (if-connected rdb   
+    (if-connected rdb
       (if-let [record (masai.db/get db key)]
         (count record)
         -1)
@@ -2678,17 +2677,18 @@ methods.</p>
     (= &quot;OK&quot; (.flushDB rdb))))</pre></tr><tr><td class="docs"><p>Create an instance of DB with redis as the backend.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn make
   [&amp; opts]
-  (let [{:keys [host port timeout]
-         :or {host &quot;localhost&quot; port 6379}
+  (let [{:keys [host port timeout key-format]
+         :or {host &quot;localhost&quot; port 6379
+              key-format (fn [^String s] (bytes (.getBytes s)))}
          :as opts}
          (into-map opts)]
     (DB.
      (if timeout
        (BinaryJedis. host port timeout)
        (BinaryJedis. host port))
-     opts)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#masai.tokyo" name="masai.tokyo"><h1 class="project-name">masai.tokyo</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><h2>Tokyo Cabinet Backend</h2>
+     opts key-format)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#masai.tokyo" name="masai.tokyo"><h1 class="project-name">masai.tokyo</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><h2>Tokyo Cabinet Backend</h2>
 </td><td class="codes" /><pre class="brush: clojure">(ns masai.tokyo
-  (:use [useful :only [into-map]])
+  (:use [useful.map :only [into-map]])
   (:require masai.db retro.core)
   (:import [tokyocabinet HDB]))</pre></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(def compress
@@ -2725,8 +2725,7 @@ methods.</p>
    (if-let [key (.iternext2 hdb)]
      (cons key (key-seq* hdb))
      nil)))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn key-format [^String s] (bytes (.getBytes (str s))))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(deftype DB [^HDB hdb opts]
+</td><td class="codes" /><pre class="brush: clojure">(deftype DB [^HDB hdb opts key-format]
   masai.db/DB
   (open [db]
     (let [path (:path opts)
@@ -2761,6 +2760,9 @@ methods.</p>
   (txn-rollback [db] (.tranabort  hdb)))</pre></tr><tr><td class="docs"><p>Create an instance of DB with Tokyo Cabinet as the backend.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn make
   [&amp; opts]
-  (let [opts (into-map opts)]
-    (DB.(HDB.) opts)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_masai.core">masai.core</li><li class="floating-toc-li" id="floating-toc_masai.db">masai.db</li><li class="floating-toc-li" id="floating-toc_masai.memcached">masai.memcached</li><li class="floating-toc-li" id="floating-toc_masai.redis">masai.redis</li><li class="floating-toc-li" id="floating-toc_masai.tokyo">masai.tokyo</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+  (let [{:keys [key-format]
+         :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
+         :as opts}
+        (into-map opts)]
+    (DB. (HDB.) opts key-format)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_masai.core">masai.core</li><li class="floating-toc-li" id="floating-toc_masai.db">masai.db</li><li class="floating-toc-li" id="floating-toc_masai.memcached">masai.memcached</li><li class="floating-toc-li" id="floating-toc_masai.redis">masai.redis</li><li class="floating-toc-li" id="floating-toc_masai.tokyo">masai.tokyo</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>
