@@ -7,5 +7,5 @@
                      [spy/memcached "2.4rc1"]
                      [org.clojars.raynes/jedis "2.0.0-SNAPSHOT"]
                      [clojure-contrib "1.2.0"]
-                     [marginalia "0.5.1"]]
-  :tasks [marginalia.tasks])
+                     [org.clojars.flatland/cake-marginalia "0.6.1"]]
+  :tasks [cake-marginalia.tasks])
