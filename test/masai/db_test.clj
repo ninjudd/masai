@@ -2,15 +2,17 @@
   (:refer-clojure :exclude [get count sync])
   (:use clojure.test masai.db)
   (:require [masai.tokyo :as tokyo]
+            [masai.tokyo-btree :as tokyo-btree]
             [masai.memcached :as memcached]
             [masai.redis :as redis]))
 
 (deftest tests
   (doseq [db [(redis/make)
-              (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]]
+              (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})
+              (tokyo-btree/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]]
     (open db)
     (truncate! db)
-    
+
     (testing "add! doesn't overwrite existing record"
       (is (= nil (get db "foo")))
       (is (= true (add! db "foo" (.getBytes "bar"))))
@@ -60,7 +62,7 @@
     (testing "exists? returns true if record exists"
       (is (= true (add! db "bazr" (.getBytes ""))))
       (is (= true (exists? db "bazr"))))
-    
+
     (testing "exists? returns false if record is non-existent"
       (is (= nil (get db "baze")))
       (is (= false (exists? db "baze"))))

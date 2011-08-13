@@ -1,8 +1,3 @@
-;; ## Redis Backend
-;; This is a Redis backend for Masai. Under the hood, it uses
-;; [Jedis](https://github.com/xetorthio/jedis) under the hood for
-;; communicating with Redis.
-
 (ns masai.redis
   (:use [useful.map :only [into-map]]
         [clojure.stacktrace :only [root-cause]])

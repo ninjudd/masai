@@ -1,32 +1,32 @@
-(ns masai.tokyo
+(ns masai.tokyo-sorted
   (:use [useful.map :only [into-map]])
   (:require masai.db retro.core)
-  (:import [tokyocabinet HDB]))
+  (:import [tokyocabinet BDB]))
 
 (def compress
-  {:deflate HDB/TDEFLATE
-   :bzip    HDB/TBZIP
-   :tcbs    HDB/TTCBS})
+  {:deflate BDB/TDEFLATE
+   :bzip    BDB/TBZIP
+   :tcbs    BDB/TTCBS})
 
 (defn- tflags
   "Check for T flags in opts and returns the corresponding tokyo flag."
   [opts]
   (bit-or
-   (if (:large opts) HDB/TLARGE 0)
+   (if (:large opts) BDB/TLARGE 0)
    (or (compress (:compress opts)) 0)))
 
 (defn- oflags
   "Check for o flags in opts and return the corresponding tokyo flag"
   [opts]
   (reduce bit-or 0
-    (list (if (:readonly opts) HDB/OREADER HDB/OWRITER)
-          (if (:create   opts) HDB/OCREAT  0)
-          (if (:truncate opts) HDB/OTRUNC  0)
-          (if (:tsync    opts) HDB/OTSYNC  0)
-          (if (:nolock   opts) HDB/ONOLCK  0)
-          (if (:noblock  opts) HDB/OLCKNB  0)
-          (if (:prepop   opts) HDB/OPREPOP 0)
-          (if (:mlock    opts) HDB/OMLOCK  0))))
+    (list (if (:readonly opts) BDB/OREADER BDB/OWRITER)
+          (if (:create   opts) BDB/OCREAT  0)
+          (if (:truncate opts) BDB/OTRUNC  0)
+          (if (:tsync    opts) BDB/OTSYNC  0)
+          (if (:nolock   opts) BDB/ONOLCK  0)
+          (if (:noblock  opts) BDB/OLCKNB  0)
+          (if (:prepop   opts) BDB/OPREPOP 0)
+          (if (:mlock    opts) BDB/OMLOCK  0))))
 
 (defmacro check
   "Run a form and if it returns a false value, check for e codes. Throw
@@ -34,18 +34,18 @@
   [form]
   `(or ~form
        (case (.ecode ~'hdb)
-         ~HDB/EKEEP  false
-         ~HDB/ENOREC false
+         ~BDB/EKEEP  false
+         ~BDB/ENOREC false
          (throw (java.io.IOException. (.errmsg ~'hdb) )))))
 
 (defn- key-seq*
-  "Get a truly lazy sequence of the keys in the database." [^HDB hdb]
+  "Get a truly lazy sequence of the keys in the database." [^BDB hdb]
   (lazy-seq
    (if-let [key (.iternext2 hdb)]
      (cons key (key-seq* hdb))
      nil)))
 
-(deftype DB [^HDB hdb opts key-format]
+(deftype DB [^BDB hdb opts key-format]
   masai.db/DB
 
   (open [db]
@@ -88,10 +88,10 @@
   (txn-rollback [db] (.tranabort  hdb)))
 
 (defn make
-  "Create an instance of DB with Tokyo Cabinet Hash as the backend."
+  "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
   [& opts]
   (let [{:keys [key-format]
          :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
          :as opts}
         (into-map opts)]
-    (DB. (HDB.) opts key-format)))
+    (DB. (BDB.) opts key-format)))
