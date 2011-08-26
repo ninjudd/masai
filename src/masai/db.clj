@@ -1,6 +1,6 @@
 ;; ## DB Protocol
 (ns masai.db
-  (:refer-clojure :exclude [get]))
+  (:refer-clojure :exclude [get subseq rsubseq]))
 
 ;; Instead of having separate, incompatible libraries to interface with
 ;; different key-value stores, Masai opts to define a common and simple
@@ -37,3 +37,6 @@
                                  time. Doesn't add if record already exists.")
   (put-expiry! [db key val exp] "Puts a record into the database with an expiration
                                  time. Overwrites the record if it already exists."))
+
+(defprotocol SortedDB
+  (subseq [db test start] [db start-test start end-test end]))

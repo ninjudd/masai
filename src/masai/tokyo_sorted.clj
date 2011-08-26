@@ -1,7 +1,7 @@
 (ns masai.tokyo-sorted
   (:use [useful.map :only [into-map]])
   (:require masai.db retro.core)
-  (:import [tokyocabinet BDB]))
+  (:import [tokyocabinet BDB BDBCUR ]))
 
 (def compress
   {:deflate BDB/TDEFLATE
@@ -24,9 +24,7 @@
           (if (:truncate opts) BDB/OTRUNC  0)
           (if (:tsync    opts) BDB/OTSYNC  0)
           (if (:nolock   opts) BDB/ONOLCK  0)
-          (if (:noblock  opts) BDB/OLCKNB  0)
-          (if (:prepop   opts) BDB/OPREPOP 0)
-          (if (:mlock    opts) BDB/OMLOCK  0))))
+          (if (:noblock  opts) BDB/OLCKNB  0))))
 
 (defmacro check
   "Run a form and if it returns a false value, check for e codes. Throw
@@ -45,6 +43,26 @@
      (cons key (key-seq* hdb))
      nil)))
 
+(defn- include [test key]
+  (fn [e] (test (compare e key) 0)))
+
+(defn cursor-seq* [cursor next]
+  (lazy-seq
+   (when next
+     (cons (.key2 cursor) (cursor-seq* cursor (.next cursor))))))
+
+(defn cursor-seq [cursor & [key]]
+  (cursor-seq* cursor (if key (.jump cursor key) (.first cursor))))
+
+(defn subseq* [cursor test key]
+  (let [include? (include test key)
+        test (#{> >=} test)
+        cseq (cursor-seq cursor (when test key))]
+    (if test
+      (when-let [[e :as s] cseq]
+        (if (include? e) s (next s)))
+      (take-while include? cseq))))
+
 (deftype DB [^BDB hdb opts key-format]
   masai.db/DB
 
@@ -54,7 +72,7 @@
           apow (or (:apow opts) -1)
           fpow (or (:fpow opts) -1)]
       (.mkdirs (.getParentFile (java.io.File. ^String path)))
-      (check (.tune hdb bnum apow fpow (tflags opts)))
+      #_(check (.tune hdb bnum apow fpow (tflags opts)))
       (when-let [rcnum (:cache opts)]
         (check (.setcache hdb rcnum)))
       (when-let [xmsiz (:xmsiz opts)]
@@ -85,7 +103,13 @@
 
   (txn-begin    [db] (.tranbegin  hdb))
   (txn-commit   [db] (.trancommit hdb))
-  (txn-rollback [db] (.tranabort  hdb)))
+  (txn-rollback [db] (.tranabort  hdb))
+
+  masai.db/SortedDB
+
+  (subseq [db test key]
+    (let [cursor (BDBCUR. hdb)]
+      (subseq* cursor test key))))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
