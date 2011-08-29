@@ -54,14 +54,19 @@
 (defn cursor-seq [cursor & [key]]
   (cursor-seq* cursor (if key (.jump cursor key) (.first cursor))))
 
-(defn subseq* [cursor test key]
-  (let [include? (include test key)
-        test (#{> >=} test)
-        cseq (cursor-seq cursor (when test key))]
-    (if test
-      (when-let [[e :as s] cseq]
-        (if (include? e) s (next s)))
-      (take-while include? cseq))))
+(defn subseq*
+  ([cursor test key]
+     (let [include? (include test key)
+           test (#{> >=} test)
+           cseq (cursor-seq cursor (when test key))]
+       (if test
+         (when-let [[e :as s] cseq]
+           (if (include? e) s (next s)))
+         (take-while include? cseq))))
+  ([cursor start-test start-key end-test end-key]
+     (when-let [[e :as s] (cursor-seq cursor (when test start-key))]
+       (take-while (include end-test end-key)
+                   (if ((include start-test start-key) e) s (next s))))))
 
 (deftype DB [^BDB hdb opts key-format]
   masai.db/DB
@@ -107,9 +112,8 @@
 
   masai.db/SortedDB
 
-  (subseq [db test key]
-    (let [cursor (BDBCUR. hdb)]
-      (subseq* cursor test key))))
+  (subseq [db test key] (subseq* (BDBCUR. hdb) test key))
+  (subseq [db stest skey etest ekey] (subseq* (BDBCUR. hdb) stest skey etest ekey)))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
