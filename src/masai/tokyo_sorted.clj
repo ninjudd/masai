@@ -69,16 +69,16 @@
 
 (defn- subseq*
   "A subseq or reverse subseq."
-  ([cursor test key forward?]
+  ([db test key forward?]
      (let [include? (include test key)
            test ((if forward? #{>= >} #{<= <}) test)
-           cseq (cursor-seq cursor forward? (and test key))]
+           cseq (cursor-seq (BDBCUR. db) forward? (and test key))]
        (if test
          (when-let [[e :as s] cseq]
            (if (include? e) s (next s)))
          (take-while include? cseq))))
-  ([cursor start-test start-key end-test end-key forward?]
-     (when-let [[e :as s] (cursor-seq cursor forward? end-key)]
+  ([db start-test start-key end-test end-key forward?]
+     (when-let [[e :as s] (cursor-seq (BDBCUR. db) forward? end-key)]
        (let [end (include end-test end-key)
              start (include start-test start-key)]
          (take-while (if forward? end start)
@@ -128,11 +128,11 @@
 
   masai.db/SortedDB
 
-  (subseq [db test key] (subseq* (BDBCUR. hdb) test key true))
-  (subseq [db stest skey etest ekey] (subseq* (BDBCUR. hdb) stest skey etest ekey true))
+  (subseq [db test key] (subseq* hdb test key true))
+  (subseq [db stest skey etest ekey] (subseq* hdb stest skey etest ekey true))
 
-  (rsubseq [db test key] (subseq* (BDBCUR. hdb) test key false))
-  (rsubseq [db stest skey etest ekey] (subseq* (BDBCUR. hdb) stest skey etest ekey false)))
+  (rsubseq [db test key] (subseq* hdb test key false))
+  (rsubseq [db stest skey etest ekey] (subseq* hdb stest skey etest ekey false)))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
