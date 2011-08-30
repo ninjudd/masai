@@ -39,4 +39,5 @@
                                  time. Overwrites the record if it already exists."))
 
 (defprotocol SortedDB
-  (subseq [db test start] [db start-test start end-test end]))
+  (subseq [db test start] [db start-test start end-test end])
+  (rsubseq [db test start] [db start-test start end-test end]))
