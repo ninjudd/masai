@@ -1,7 +1,7 @@
 (ns masai.tokyo-sorted
   (:use [useful.map :only [into-map]])
   (:require masai.db retro.core)
-  (:import [tokyocabinet BDB BDBCUR ]))
+  (:import [tokyocabinet BDB BDBCUR]))
 
 (def compress
   {:deflate BDB/TDEFLATE
