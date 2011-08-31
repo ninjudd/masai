@@ -1,89 +1,110 @@
 (ns masai.db-test
   (:refer-clojure :exclude [get count sync])
-  (:use clojure.test masai.db)
+  (:use clojure.test)
   (:require [masai.tokyo :as tokyo]
-            [masai.tokyo-btree :as tokyo-btree]
+            [masai.tokyo-sorted :as tokyo-btree]
             [masai.memcached :as memcached]
-            [masai.redis :as redis]))
+            [masai.redis :as redis]
+            [masai.db :as db]))
 
 (deftest tests
   (doseq [db [(redis/make)
               (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})
               (tokyo-btree/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]]
-    (open db)
-    (truncate! db)
+    (db/open db)
+    (db/truncate! db)
 
     (testing "add! doesn't overwrite existing record"
-      (is (= nil (get db "foo")))
-      (is (= true (add! db "foo" (.getBytes "bar"))))
-      (is (= "bar" (String. (get db "foo"))))
-      (is (= false (add! db "foo" (.getBytes "baz"))))
-      (is (= "bar" (String. (get db "foo")))))
+      (is (= nil (db/get db "foo")))
+      (is (= true (db/add! db "foo" (.getBytes "bar"))))
+      (is (= "bar" (String. (db/get db "foo"))))
+      (is (= false (db/add! db "foo" (.getBytes "baz"))))
+      (is (= "bar" (String. (db/get db "foo")))))
 
     (testing "put! overwrites existing record"
-      (is (= true (put! db "foo" (.getBytes "baz"))))
-      (is (= "baz" (String. (get db "foo")))))
+      (is (= true (db/put! db "foo" (.getBytes "baz"))))
+      (is (= "baz" (String. (db/get db "foo")))))
 
     (testing "append! to existing record"
-      (is (= true (append! db "foo" (.getBytes "bar"))))
-      (is (= "bazbar" (String. (get db "foo"))))
-      (is (= true (append! db "foo" (.getBytes "!"))))
-      (is (= "bazbar!" (String. (get db "foo")))))
+      (is (= true (db/append! db "foo" (.getBytes "bar"))))
+      (is (= "bazbar" (String. (db/get db "foo"))))
+      (is (= true (db/append! db "foo" (.getBytes "!"))))
+      (is (= "bazbar!" (String. (db/get db "foo")))))
 
     (testing "append! to nonexistent record"
-      (is (= true (append! db "baz" (.getBytes "1234"))))
-      (is (= "1234" (String. (get db "baz")))))
+      (is (= true (db/append! db "baz" (.getBytes "1234"))))
+      (is (= "1234" (String. (db/get db "baz")))))
 
     (testing "delete! record returns true on success"
-      (is (= true (delete! db "foo")))
-      (is (= nil (get db "foo")))
-      (is (= true (delete! db "baz")))
-      (is (= nil (get db "baz"))))
+      (is (= true (db/delete! db "foo")))
+      (is (= nil (db/get db "foo")))
+      (is (= true (db/delete! db "baz")))
+      (is (= nil (db/get db "baz"))))
 
     (testing "delete! nonexistent records returns false"
-      (is (= false (delete! db "foo")))
-      (is (= false (delete! db "bar"))))
+      (is (= false (db/delete! db "foo")))
+      (is (= false (db/delete! db "bar"))))
 
     (testing "len returns -1 for nonexistent records"
-      (is (= nil (get db "foo")))
-      (is (= -1 (len db "foo"))))
+      (is (= nil (db/get db "foo")))
+      (is (= -1 (db/len db "foo"))))
 
     (testing "len returns the length for existing records"
-      (is (= true (put! db "foo" (.getBytes ""))))
-      (is (= "" (String. (get db "foo"))))
-      (is (= 0 (len db "foo")))
-      (is (= true (put! db "bar" (.getBytes "12345"))))
-      (is (= 5 (len db "bar")))
-      (is (= true (append! db "bar" (.getBytes "6789"))))
-      (is (= 9 (len db "bar")))
-      (is (= true (add! db "baz" (.getBytes ".........."))))
-      (is (= 10 (len db "baz"))))
+      (is (= true (db/put! db "foo" (.getBytes ""))))
+      (is (= "" (String. (db/get db "foo"))))
+      (is (= 0 (db/len db "foo")))
+      (is (= true (db/put! db "bar" (.getBytes "12345"))))
+      (is (= 5 (db/len db "bar")))
+      (is (= true (db/append! db "bar" (.getBytes "6789"))))
+      (is (= 9 (db/len db "bar")))
+      (is (= true (db/add! db "baz" (.getBytes ".........."))))
+      (is (= 10 (db/len db "baz"))))
 
     (testing "exists? returns true if record exists"
-      (is (= true (add! db "bazr" (.getBytes ""))))
-      (is (= true (exists? db "bazr"))))
+      (is (= true (db/add! db "bazr" (.getBytes ""))))
+      (is (= true (db/exists? db "bazr"))))
 
     (testing "exists? returns false if record is non-existent"
-      (is (= nil (get db "baze")))
-      (is (= false (exists? db "baze"))))
+      (is (= nil (db/get db "baze")))
+      (is (= false (db/exists? db "baze"))))
 
     (testing "a closed db appears empty"
-      (close db)
-      (is (= nil (get db "bar")))
-      (is (= nil (get db "baz")))
-      (is (= -1 (len db "baz")))
-      (is (= false (exists? db "baz"))))
+      (db/close db)
+      (is (= nil (db/get db "bar")))
+      (is (= nil (db/get db "baz")))
+      (is (= -1 (db/len db "baz")))
+      (is (= false (db/exists? db "baz"))))
 
     (testing "can reopen a closed db"
-      (open db)
-      (is (not= nil (get db "bar")))
-      (is (not= nil (get db "baz")))
-      (is (= "123456789" (String. (get db "bar")))))
+      (db/open db)
+      (is (not= nil (db/get db "bar")))
+      (is (not= nil (db/get db "baz")))
+      (is (= "123456789" (String. (db/get db "bar")))))
 
     (testing "truncate deletes all records"
-      (is (= true (truncate! db)))
-      (is (= nil (get db "foo")))
-      (is (= nil (get db "bar")))
-      (is (= nil (get db "baz"))))
+      (is (= true (db/truncate! db)))
+      (is (= nil (db/get db "foo")))
+      (is (= nil (db/get db "bar")))
+      (is (= nil (db/get db "baz"))))
 
-    (close db)))
+    (db/close db)))
+
+(defn str-range [& args]
+  (map str (apply range args)))
+
+(deftest sorted-db
+  (let [db (tokyo-btree/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]
+    (db/open db)
+    (db/truncate! db)
+    (doseq [x ["bar" "baz" "bam" "cat" "foo"]]
+      (db/add! db x (.getBytes "")))
+
+    (testing "subseq works as in core"
+      (is (= (db/subseq db > "bar") '("baz" "cat" "foo")))
+      (is (= (db/subseq db > "bar" < "foo") '("baz" "cat")))
+      (is (= (db/subseq db < "foo") '("bam" "bar" "baz" "cat"))))
+
+    (testing "rsubseq works as in core"
+      (is (= (db/rsubseq db > "bar") '("foo" "cat" "baz")))
+      (is (= (db/rsubseq db > "bar" < "foo") '("cat" "baz")))
+      (is (= (db/rsubseq db < "foo") '("cat" "baz" "bar" "bam"))))))

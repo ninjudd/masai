@@ -78,7 +78,7 @@
            (if (include? e) s (next s)))
          (take-while include? cseq))))
   ([db start-test start-key end-test end-key forward?]
-     (when-let [[e :as s] (cursor-seq (BDBCUR. db) forward? end-key)]
+     (when-let [[e :as s] (cursor-seq (BDBCUR. db) forward? (if forward? start-key end-key))]
        (let [end (include end-test end-key)
              start (include start-test start-key)]
          (take-while (if forward? end start)
