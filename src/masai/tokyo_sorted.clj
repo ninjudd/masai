@@ -1,5 +1,6 @@
 (ns masai.tokyo-sorted
-  (:use [useful.map :only [into-map]])
+  (:use [useful.map :only [into-map]]
+        [useful.experimental :only [order-let-if]])
   (:require masai.db retro.core)
   (:import [tokyocabinet BDB BDBCUR]))
 
@@ -79,10 +80,10 @@
          (take-while include? cseq))))
   ([db start-test start-key end-test end-key forward?]
      (when-let [[e :as s] (cursor-seq (BDBCUR. db) forward? (if forward? start-key end-key))]
-       (let [end (include end-test end-key)
-             start (include start-test start-key)]
-         (take-while (if forward? end start)
-                     (if ((if forward? start end) e) s (next s)))))))
+       (order-let-if forward?
+                     [end (include end-test end-key)
+                      start (include start-test start-key)]
+        (take-while end (if (start e) s (next s)))))))
 
 (deftype DB [^BDB hdb opts key-format]
   masai.db/DB

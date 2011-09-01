@@ -1,7 +1,7 @@
 (defproject masai "0.5.3"
   :description "Key-value database for Clojure with pluggable backends."
   :dependencies [[clojure "1.2.0"]
-                 [useful "0.7.0-alpha3"]
+                 [useful "0.7.0-alpha5"]
                  [retro "0.5.0"]]
   :dev-dependencies [[tokyocabinet "1.24.1-SNAPSHOT"]
                      [spy/memcached "2.4rc1"]
