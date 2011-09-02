@@ -89,22 +89,23 @@
 
     (db/close db)))
 
-(defn str-range [& args]
-  (map str (apply range args)))
+(defn keys-equal? [s test]
+  (= test (map first s)))
 
 (deftest sorted-db
   (let [db (tokyo-btree/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]
     (db/open db)
     (db/truncate! db)
-    (doseq [x ["bar" "baz" "bam" "cat" "foo"]]
-      (db/add! db x (.getBytes "")))
+    (let [bytes (.getBytes "")]
+      (doseq [x ["bar" "baz" "bam" "cat" "foo"]]
+        (db/add! db x bytes))
 
-    (testing "subseq works as in core"
-      (is (= (db/subseq db > "bar") '("baz" "cat" "foo")))
-      (is (= (db/subseq db > "bar" < "foo") '("baz" "cat")))
-      (is (= (db/subseq db < "foo") '("bam" "bar" "baz" "cat"))))
+      (testing "subseq works as in core"
+        (is (keys-equal? (db/subseq db > "bar") '("baz" "cat" "foo")))
+        (is (keys-equal? (db/subseq db > "bar" < "foo") '("baz" "cat")))
+        (is (keys-equal? (db/subseq db < "foo") '("bam" "bar" "baz" "cat"))))
 
-    (testing "rsubseq works as in core"
-      (is (= (db/rsubseq db > "bar") '("foo" "cat" "baz")))
-      (is (= (db/rsubseq db > "bar" < "foo") '("cat" "baz")))
-      (is (= (db/rsubseq db < "foo") '("cat" "baz" "bar" "bam"))))))
+      (testing "rsubseq works as in core"
+        (is (keys-equal? (db/rsubseq db > "bar") '("foo" "cat" "baz")))
+        (is (keys-equal? (db/rsubseq db > "bar" < "foo") '("cat" "baz")))
+        (is (keys-equal? (db/rsubseq db < "foo") '("cat" "baz" "bar" "bam")))))))

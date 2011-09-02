@@ -45,12 +45,12 @@
      nil)))
 
 (defn- include [test key]
-  (fn [e] (test (compare e key) 0)))
+  (fn [[k]] (test (compare k key) 0)))
 
 (defn- cursor-seq* [cursor next forward?]
   (lazy-seq
    (when next
-     (cons (.key2 cursor)
+     (cons [(.key2 cursor) (.val cursor)]
            (cursor-seq* cursor
                         (if forward?
                           (.next cursor)
@@ -89,12 +89,14 @@
   masai.db/DB
 
   (open [db]
-    (let [path (:path opts)
-          bnum (or (:bnum opts)  0)
-          apow (or (:apow opts) -1)
-          fpow (or (:fpow opts) -1)]
+    (let [path  (:path opts)
+          bnum  (or (:bnum opts)  0)
+          apow  (or (:apow opts) -1)
+          fpow  (or (:fpow opts) -1)
+          lmemb (or (:lmemb opts) 0)
+          nmemb (or (:nmemb opts) 0)]
       (.mkdirs (.getParentFile (java.io.File. ^String path)))
-      #_(check (.tune hdb bnum apow fpow (tflags opts)))
+      (check (.tune hdb lmemb nmemb bnum apow fpow (tflags opts)))
       (when-let [rcnum (:cache opts)]
         (check (.setcache hdb rcnum)))
       (when-let [xmsiz (:xmsiz opts)]
