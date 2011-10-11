@@ -10,7 +10,7 @@
 (deftest tests
   (doseq [db [(redis/make)
               (tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})
-              (tokyo-btree/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]]
+              (tokyo-btree/make {:path "/tmp/masai-test-sorted-tokyo-db" :create true :prepop true})]]
     (db/open db)
     (db/truncate! db)
 
@@ -93,7 +93,7 @@
   (= test (map first s)))
 
 (deftest sorted-db
-  (let [db (tokyo-btree/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})]
+  (let [db (tokyo-btree/make {:path "/tmp/masai-test-sorted-tokyo-db2" :create true :prepop true})]
     (db/open db)
     (db/truncate! db)
     (let [bytes (.getBytes "")]
