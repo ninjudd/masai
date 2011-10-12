@@ -47,26 +47,22 @@
 (defn- include [test key]
   (fn [[k]] (test (compare k key) 0)))
 
-(defn- cursor-seq* [cursor next forward?]
-  (lazy-seq
-   (when next
-     (cons [(.key2 cursor) (.val cursor)]
-           (cursor-seq* cursor
-                        (if forward?
-                          (.next cursor)
-                          (.prev cursor))
-                        forward?)))))
-
 (defn- cursor-seq
   "Get a lazy sequence of steps through the database."
   [cursor forward? & [key]]
-  (cursor-seq* cursor
-               (if key
-                 (.jump cursor key)
-                 (if forward?
-                   (.first cursor)
-                   (.last cursor)))
-               forward?))
+  (letfn [(seqify [next]
+            (lazy-seq
+             (when next
+               (cons [(.key2 cursor) (.val cursor)]
+                     (seqify (if forward?
+                               (.next cursor)
+                               (.prev cursor)))))))]
+    (seqify
+     (if key
+       (.jump cursor key)
+       (if forward?
+         (.first cursor)
+         (.last cursor))))))
 
 (defn- subseq*
   "A subseq or reverse subseq."
