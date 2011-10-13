@@ -1,6 +1,7 @@
 (ns masai.tokyo
-  (:use [useful.map :only [into-map]])
-  (:require masai.db retro.core)
+  (:use [useful.map :only [into-map]]
+        [retro.core :only [Transactional]])
+  (:require masai.db)
   (:import [tokyocabinet HDB]))
 
 (def compress
@@ -33,10 +34,12 @@
    an IOException if no e codes are present."
   [form]
   `(or ~form
-       (case (.ecode ~'hdb)
-         ~HDB/EKEEP  false
-         ~HDB/ENOREC false
-         (throw (java.io.IOException. (.errmsg ~'hdb) )))))
+       (let [code# (.ecode ~'hdb)]
+         (case code#
+           ~HDB/EKEEP  false
+           ~HDB/ENOREC false
+           (throw (java.io.IOException.
+                   (format "Tokyocabinet error %d: %s" code# (.errmsg ~'hdb)) ))))))
 
 (defn- key-seq*
   "Get a truly lazy sequence of the keys in the database." [^HDB hdb]
@@ -47,8 +50,7 @@
 
 (deftype DB [^HDB hdb opts key-format]
   masai.db/DB
-
-  (open [db]
+  (open [this]
     (let [path (:path opts)
           bnum (or (:bnum opts)  0)
           apow (or (:apow opts) -1)
@@ -60,32 +62,44 @@
       (when-let [xmsiz (:xmsiz opts)]
         (check (.setxmsiz hdb xmsiz)))
       (check (.open hdb path (oflags opts)))))
+  (close [this]
+    (.close hdb))
+  (sync! [this]
+    (.sync  hdb))
+  (optimize! [this]
+    (.optimize hdb))
 
-  (close     [db] (.close hdb))
-  (sync!     [db] (.sync  hdb))
-  (optimize! [db] (.optimize hdb))
-
-  (get [db key] (.get  hdb ^"[B" (key-format key)))
-  (len [db key] (.vsiz hdb ^"[B" (key-format key)))
-  (exists? [db key] (not (= -1 (masai.db/len db key))))
-
-  (key-seq [db]
+  (fetch [this key]
+    (.get  hdb ^"[B" (key-format key)))
+  (len [this key]
+    (.vsiz hdb ^"[B" (key-format key)))
+  (exists? [this key]
+    (not (= -1 (masai.db/len this key))))
+  (key-seq [this]
     (.iterinit hdb)
     (key-seq* hdb))
 
-  (add!    [db key val] (check (.putkeep hdb ^"[B" (key-format key) (bytes val))))
-  (put!    [db key val] (check (.put     hdb ^"[B" (key-format key) (bytes val))))
-  (append! [db key val] (check (.putcat  hdb ^"[B" (key-format key) (bytes val))))
-  (inc!    [db key i]   (.addint hdb ^"[B" (key-format key) ^Integer i))
+  (add! [this key val]
+    (check (.putkeep hdb ^"[B" (key-format key) (bytes val))))
+  (put! [this key val]
+    (check (.put hdb ^"[B" (key-format key) (bytes val))))
+  (append! [this key val]
+    (check (.putcat  hdb ^"[B" (key-format key) (bytes val))))
+  (inc! [this key i]
+    (.addint hdb ^"[B" (key-format key) ^Integer i))
 
-  (delete!   [db key] (check (.out    hdb ^"[B" (key-format key))))
-  (truncate! [db]     (check (.vanish hdb)))
+  (delete! [db key]
+    (check (.out hdb ^"[B" (key-format key))))
+  (truncate! [db]
+    (check (.vanish hdb)))
 
-  retro.core/Transactional
-
-  (txn-begin    [db] (.tranbegin  hdb))
-  (txn-commit   [db] (.trancommit hdb))
-  (txn-rollback [db] (.tranabort  hdb)))
+  Transactional
+  (txn-begin [this]
+    (.tranbegin  hdb))
+  (txn-commit [this]
+    (.trancommit hdb))
+  (txn-rollback [this]
+    (.tranabort  hdb)))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet Hash as the backend."

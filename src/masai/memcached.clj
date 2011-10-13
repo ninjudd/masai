@@ -17,7 +17,7 @@
   (close [db]
     (.shutdown mdb))
 
-  (get [db key]
+  (fetch [db key]
     (.get mdb (key-format key)))
 
   (add! [db key val] (masai.db/add-expiry! db key val 0))
@@ -31,12 +31,12 @@
         (masai.db/add! db key val))))
 
   (len [db key]
-    (if-let [record (masai.db/get db key)]
+    (if-let [record (masai.db/fetch db key)]
       (count (str record))
       -1))
 
   (exists? [db key]
-    (not= nil (masai.db/get db key)))
+    (not= nil (masai.db/fetch db key)))
 
   (inc! [db key i]
     (if (> 0 i)

@@ -45,13 +45,13 @@
   (sync! [db]
     (.save rdb))
 
-  (get [db key]
+  (fetch [db key]
     (if-connected rdb
       (.get rdb (key-format key))))
 
   (len [db key]
     (if-connected rdb
-      (if-let [record (masai.db/get db key)]
+      (if-let [record (masai.db/fetch db key)]
         (count record)
         -1)
       -1))

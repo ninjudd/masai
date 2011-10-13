@@ -1,5 +1,6 @@
 (ns masai.tokyo-sorted
   (:use [useful.map :only [into-map]]
+        [useful.seq :only [lazy-loop]]
         [useful.experimental :only [order-let-if]])
   (:require masai.db retro.core)
   (:import [tokyocabinet BDB BDBCUR]))
@@ -32,58 +33,20 @@
    an IOException if no e codes are present."
   [form]
   `(or ~form
-       (case (.ecode ~'hdb)
+       (case (.ecode ~'bdb)
          ~BDB/EKEEP  false
          ~BDB/ENOREC false
-         (throw (java.io.IOException. (.errmsg ~'hdb) )))))
+         (throw (java.io.IOException. (.errmsg ~'bdb) )))))
 
-(defn- key-seq*
-  "Get a truly lazy sequence of the keys in the database." [^BDB hdb]
-  (lazy-seq
-   (if-let [key (.iternext2 hdb)]
-     (cons key (key-seq* hdb))
-     nil)))
+(defn- cursor-seq [bdb first next]
+  (let [cursor (BDBCUR. bdb)]
+    (lazy-loop [more? (first cursor)]
+      (when more?
+        (cons [(.key2 cursor) (.val cursor)]
+              (lazy-recur (next cursor)))))))
 
-(defn- include [test key]
-  (fn [[k]] (test (compare k key) 0)))
-
-(defn- cursor-seq
-  "Get a lazy sequence of steps through the database."
-  [cursor forward? & [key]]
-  (letfn [(seqify [next]
-            (lazy-seq
-             (when next
-               (cons [(.key2 cursor) (.val cursor)]
-                     (seqify (if forward?
-                               (.next cursor)
-                               (.prev cursor)))))))]
-    (seqify
-     (if key
-       (.jump cursor key)
-       (if forward?
-         (.first cursor)
-         (.last cursor))))))
-
-(defn- subseq*
-  "A subseq or reverse subseq."
-  ([db test key forward?]
-     (let [include? (include test key)
-           test ((if forward? #{>= >} #{<= <}) test)
-           cseq (cursor-seq (BDBCUR. db) forward? (and test key))]
-       (if test
-         (when-let [[e :as s] cseq]
-           (if (include? e) s (next s)))
-         (take-while include? cseq))))
-  ([db start-test start-key end-test end-key forward?]
-     (when-let [[e :as s] (cursor-seq (BDBCUR. db) forward? (if forward? start-key end-key))]
-       (order-let-if forward?
-                     [end (include end-test end-key)
-                      start (include start-test start-key)]
-        (take-while end (if (start e) s (next s)))))))
-
-(deftype DB [^BDB hdb opts key-format]
+(deftype DB [^BDB bdb opts key-format]
   masai.db/DB
-
   (open [db]
     (let [path  (:path opts)
           bnum  (or (:bnum opts)  0)
@@ -92,52 +55,70 @@
           lmemb (or (:lmemb opts) 0)
           nmemb (or (:nmemb opts) 0)]
       (.mkdirs (.getParentFile (java.io.File. ^String path)))
-      (check (.tune hdb lmemb nmemb bnum apow fpow (tflags opts)))
+      (check (.tune bdb lmemb nmemb bnum apow fpow (tflags opts)))
       (when-let [rcnum (:cache opts)]
-        (check (.setcache hdb rcnum)))
+        (check (.setcache bdb rcnum)))
       (when-let [xmsiz (:xmsiz opts)]
-        (check (.setxmsiz hdb xmsiz)))
-      (check (.open hdb path (oflags opts)))))
+        (check (.setxmsiz bdb xmsiz)))
+      (check (.open bdb path (oflags opts)))))
+  (close [db]
+    (.close bdb))
+  (sync! [db]
+    (.sync  bdb))
+  (optimize! [db]
+    (.optimize bdb))
 
-  (close     [db] (.close hdb))
-  (sync!     [db] (.sync  hdb))
-  (optimize! [db] (.optimize hdb))
-
-  (get [db key] (.get  hdb ^"[B" (key-format key)))
-  (len [db key] (.vsiz hdb ^"[B" (key-format key)))
-  (exists? [db key] (not (= -1 (masai.db/len db key))))
-
+  (fetch [db key]
+    (.get  bdb ^"[B" (key-format key)))
+  (len [db key]
+    (.vsiz bdb ^"[B" (key-format key)))
+  (exists? [db key]
+    (not (= -1 (masai.db/len db key))))
   (key-seq [db]
-    (.iterinit hdb)
-    (key-seq* hdb))
+    (.iterinit bdb)
+    (lazy-loop []
+      (when-let [key (.iternext2 bdb)]
+        (cons key (lazy-recur)))))
 
-  (add!    [db key val] (check (.putkeep hdb ^"[B" (key-format key) (bytes val))))
-  (put!    [db key val] (check (.put     hdb ^"[B" (key-format key) (bytes val))))
-  (append! [db key val] (check (.putcat  hdb ^"[B" (key-format key) (bytes val))))
-  (inc!    [db key i]   (.addint hdb ^"[B" (key-format key) ^Integer i))
+  (add! [db key val]
+    (check (.putkeep bdb ^"[B" (key-format key) (bytes val))))
+  (put! [db key val]
+    (check (.put bdb ^"[B" (key-format key) (bytes val))))
+  (append! [db key val]
+    (check (.putcat bdb ^"[B" (key-format key) (bytes val))))
+  (inc! [db key i]
+    (.addint bdb ^"[B" (key-format key) ^Integer i))
 
-  (delete!   [db key] (check (.out    hdb ^"[B" (key-format key))))
-  (truncate! [db]     (check (.vanish hdb)))
+  (delete! [db key]
+    (check (.out bdb ^"[B" (key-format key))))
+  (truncate! [db]
+    (check (.vanish bdb)))
 
   retro.core/Transactional
+  (txn-begin [db]
+    (.tranbegin  bdb))
+  (txn-commit [db]
+    (.trancommit bdb))
+  (txn-rollback [db]
+    (.tranabort  bdb))
 
-  (txn-begin    [db] (.tranbegin  hdb))
-  (txn-commit   [db] (.trancommit hdb))
-  (txn-rollback [db] (.tranabort  hdb))
-
-  masai.db/SortedDB
-
-  (subseq [db test key] (subseq* hdb test key true))
-  (subseq [db stest skey etest ekey] (subseq* hdb stest skey etest ekey true))
-
-  (rsubseq [db test key] (subseq* hdb test key false))
-  (rsubseq [db stest skey etest ekey] (subseq* hdb stest skey etest ekey false)))
+  masai.db/SequentialDB
+  (fetch-seq [db key]
+    (cursor-seq bdb
+                (if key #(.jump % (key-format key))
+                        #(.first %))
+                #(.next %)))
+  (fetch-rseq [db key]
+    (cursor-seq bdb
+                (if key #(.jump % (key-format key))
+                        #(.last %))
+                #(.prev %))))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
   [& opts]
   (let [{:keys [key-format]
-         :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
+         :or {key-format (fn [^String s] (when s (bytes (.getBytes (str s)))))}
          :as opts}
         (into-map opts)]
     (DB. (BDB.) opts key-format)))

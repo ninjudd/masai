@@ -35,7 +35,7 @@ Now you can work with your db. You can add stuff:
 
 Get stuff:
 
-    (get "db" "foo")
+    (fetch "db" "foo")
 
 And even delete stuff:
 
