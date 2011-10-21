@@ -51,9 +51,7 @@
 
 (defn make [& opts]
   (let [{:keys [addresses]
-         :or {addresses {"localhost" 11211}}}
-        (into-map opts)]
-    (DB.
-     (MemcachedClient.
-      (for [[addr ^Integer port] addresses]
-        (InetSocketAddress. (InetAddress/getByName addr) port))))))
+         :or {addresses {"localhost" 11211}}} (into-map opts)
+        ^java.util.List addrs (for [[addr ^Integer port] addresses]
+                                (InetSocketAddress. (InetAddress/getByName addr) port))]
+    (DB. (MemcachedClient. addrs))))

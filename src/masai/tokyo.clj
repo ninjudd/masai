@@ -70,9 +70,9 @@
     (.optimize hdb))
 
   (fetch [this key]
-    (.get  hdb ^"[B" (key-format key)))
+    (.get  hdb ^bytes (key-format key)))
   (len [this key]
-    (.vsiz hdb ^"[B" (key-format key)))
+    (.vsiz hdb ^bytes (key-format key)))
   (exists? [this key]
     (not (= -1 (masai.db/len this key))))
   (key-seq [this]
@@ -80,16 +80,16 @@
     (key-seq* hdb))
 
   (add! [this key val]
-    (check (.putkeep hdb ^"[B" (key-format key) (bytes val))))
+    (check (.putkeep hdb ^bytes (key-format key) (bytes val))))
   (put! [this key val]
-    (check (.put hdb ^"[B" (key-format key) (bytes val))))
+    (check (.put hdb ^bytes (key-format key) (bytes val))))
   (append! [this key val]
-    (check (.putcat  hdb ^"[B" (key-format key) (bytes val))))
+    (check (.putcat  hdb ^bytes (key-format key) (bytes val))))
   (inc! [this key i]
-    (.addint hdb ^"[B" (key-format key) ^Integer i))
+    (.addint hdb ^bytes (key-format key) ^Integer i))
 
   (delete! [db key]
-    (check (.out hdb ^"[B" (key-format key))))
+    (check (.out hdb ^bytes (key-format key))))
   (truncate! [db]
     (check (.vanish hdb)))
 

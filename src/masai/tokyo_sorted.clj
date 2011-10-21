@@ -38,12 +38,21 @@
          ~BDB/ENOREC false
          (throw (java.io.IOException. (.errmsg ~'bdb) )))))
 
-(defn- cursor-seq [bdb first next]
+(defn- cursor-seq
+  "Return a lazy cursor sequence by initializing the cursor by calling first and advances the cursor
+  with next."
+  [bdb first next]
   (let [cursor (BDBCUR. bdb)]
     (lazy-loop [more? (first cursor)]
       (when more?
         (cons [(.key2 cursor) (.val cursor)]
               (lazy-recur (next cursor)))))))
+
+(defmacro curfn
+  "Like memfn, except type hinted for BDBCUR."
+  [method & args]
+  `(fn [^BDBCUR cur#]
+     (. cur# ~method ~@args)))
 
 (deftype DB [^BDB bdb opts key-format]
   masai.db/DB
@@ -56,8 +65,8 @@
           nmemb (or (:nmemb opts) 0)]
       (.mkdirs (.getParentFile (java.io.File. ^String path)))
       (check (.tune bdb lmemb nmemb bnum apow fpow (tflags opts)))
-      (when-let [rcnum (:cache opts)]
-        (check (.setcache bdb rcnum)))
+      (when-let [[lcnum rcnum] (:cache opts)]
+        (check (.setcache bdb lcnum rcnum)))
       (when-let [xmsiz (:xmsiz opts)]
         (check (.setxmsiz bdb xmsiz)))
       (check (.open bdb path (oflags opts)))))
@@ -69,9 +78,9 @@
     (.optimize bdb))
 
   (fetch [db key]
-    (.get  bdb ^"[B" (key-format key)))
+    (.get  bdb ^bytes (key-format key)))
   (len [db key]
-    (.vsiz bdb ^"[B" (key-format key)))
+    (.vsiz bdb ^bytes (key-format key)))
   (exists? [db key]
     (not (= -1 (masai.db/len db key))))
   (key-seq [db]
@@ -81,16 +90,16 @@
         (cons key (lazy-recur)))))
 
   (add! [db key val]
-    (check (.putkeep bdb ^"[B" (key-format key) (bytes val))))
+    (check (.putkeep bdb ^bytes (key-format key) (bytes val))))
   (put! [db key val]
-    (check (.put bdb ^"[B" (key-format key) (bytes val))))
+    (check (.put bdb ^bytes (key-format key) (bytes val))))
   (append! [db key val]
-    (check (.putcat bdb ^"[B" (key-format key) (bytes val))))
+    (check (.putcat bdb ^bytes (key-format key) (bytes val))))
   (inc! [db key i]
-    (.addint bdb ^"[B" (key-format key) ^Integer i))
+    (.addint bdb ^bytes (key-format key) ^Integer i))
 
   (delete! [db key]
-    (check (.out bdb ^"[B" (key-format key))))
+    (check (.out bdb ^bytes (key-format key))))
   (truncate! [db]
     (check (.vanish bdb)))
 
@@ -105,14 +114,14 @@
   masai.db/SequentialDB
   (fetch-seq [db key]
     (cursor-seq bdb
-                (if key #(.jump % (key-format key))
-                        #(.first %))
-                #(.next %)))
+                (if key (curfn jump ^bytes (key-format key))
+                        (curfn first))
+                (curfn next)))
   (fetch-rseq [db key]
     (cursor-seq bdb
-                (if key #(.jump % (key-format key))
-                        #(.last %))
-                #(.prev %))))
+                (if key (curfn jump ^bytes (key-format key))
+                        (curfn last))
+                (curfn prev))))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
