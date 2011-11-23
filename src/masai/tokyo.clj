@@ -94,11 +94,11 @@
     (check (.vanish hdb)))
 
   Transactional
-  (txn-begin [this]
+  (txn-begin! [this]
     (.tranbegin  hdb))
-  (txn-commit [this]
+  (txn-commit! [this]
     (.trancommit hdb))
-  (txn-rollback [this]
+  (txn-rollback! [this]
     (.tranabort  hdb)))
 
 (defn make

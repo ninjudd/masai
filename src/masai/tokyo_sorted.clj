@@ -104,11 +104,11 @@
     (check (.vanish bdb)))
 
   retro.core/Transactional
-  (txn-begin [db]
+  (txn-begin! [db]
     (.tranbegin  bdb))
-  (txn-commit [db]
+  (txn-commit! [db]
     (.trancommit bdb))
-  (txn-rollback [db]
+  (txn-rollback! [db]
     (.tranabort  bdb))
 
   masai.db/SequentialDB

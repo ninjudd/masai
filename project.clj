@@ -1,4 +1,4 @@
-(defproject masai "0.7.0-alpha2"
+(defproject masai "0.7.0-alpha3"
   :description "Key-value database for Clojure with pluggable backends."
   :dependencies [[clojure "1.2.0"]
                  [useful "0.7.1"]
