@@ -13,6 +13,9 @@
     "Open the database.")
   (close [db]
     "Close the database.")
+  (unique-id [db]
+    "An identifier for this database, unique within the current jvm. Two DBs with the
+     same backing storage should have the same unique-id. For example, the jdbc URI or a filepath.")
   (sync! [db]
     "Sync the database to the disk.")
   (optimize! [db]

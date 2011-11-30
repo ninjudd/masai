@@ -2,7 +2,8 @@
   (:use [useful.map :only [into-map]]
         [useful.seq :only [lazy-loop]]
         [useful.experimental :only [order-let-if]])
-  (:require masai.db retro.core)
+  (:require masai.db retro.core
+            [masai.tokyo-common :as tokyo])
   (:import [tokyocabinet BDB BDBCUR]))
 
 (def compress
@@ -76,6 +77,8 @@
     (.sync  bdb))
   (optimize! [db]
     (.optimize bdb))
+  (unique-id [db]
+    (.path bdb))
 
   (fetch [db key]
     (.get  bdb ^bytes (key-format key)))
@@ -103,14 +106,6 @@
   (truncate! [db]
     (check (.vanish bdb)))
 
-  retro.core/Transactional
-  (txn-begin! [db]
-    (.tranbegin  bdb))
-  (txn-commit! [db]
-    (.trancommit bdb))
-  (txn-rollback! [db]
-    (.tranabort  bdb))
-
   masai.db/SequentialDB
   (fetch-seq [db key]
     (cursor-seq bdb
@@ -122,6 +117,10 @@
                 (if key (curfn jump ^bytes (key-format key))
                         (curfn last))
                 (curfn prev))))
+
+(extend DB
+  retro.core/Transactional
+  (tokyo/transaction-impl DB bdb BDB))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."

@@ -5,7 +5,8 @@
             [masai.tokyo-sorted :as tokyo-btree]
             [masai.memcached :as memcached]
             [masai.redis :as redis]
-            [masai.db :as db]))
+            [masai.db :as db]
+            [retro.core :as retro]))
 
 (deftest tests
   (doseq [db [(redis/make)
@@ -88,6 +89,15 @@
       (is (= nil (db/fetch db "baz"))))
 
     (db/close db)))
+
+(deftest transactions
+  (doseq [db [(tokyo/make {:path "/tmp/masai-test-tokyo-db" :create true :prepop true})
+              (tokyo-btree/make {:path "/tmp/masai-test-sorted-tokyo-db" :create true :prepop true})]]
+    (retro/txn-begin! db)
+    (retro/txn-begin! db) ; this will block forever if we actually open two transactions
+    (retro/txn-commit! db)
+    (retro/txn-commit! db)
+    (is (= true true)))) ; if we got here, things are A-OK
 
 (deftest sorted-db
   (let [db (tokyo-btree/make {:path "/tmp/masai-test-sorted-tokyo-db2" :create true :prepop true})]

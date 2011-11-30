@@ -1,7 +1,8 @@
 (ns masai.tokyo
   (:use [useful.map :only [into-map]]
-        [retro.core :only [Transactional]])
-  (:require masai.db)
+        [useful.utils :only [thread-local]])
+  (:require masai.db retro.core
+            [masai.tokyo-common :as tokyo])
   (:import [tokyocabinet HDB]))
 
 (def compress
@@ -68,6 +69,8 @@
     (.sync  hdb))
   (optimize! [this]
     (.optimize hdb))
+  (unique-id [this]
+    (.path hdb))
 
   (fetch [this key]
     (.get  hdb ^bytes (key-format key)))
@@ -91,15 +94,11 @@
   (delete! [db key]
     (check (.out hdb ^bytes (key-format key))))
   (truncate! [db]
-    (check (.vanish hdb)))
+    (check (.vanish hdb))))
 
-  Transactional
-  (txn-begin! [this]
-    (.tranbegin  hdb))
-  (txn-commit! [this]
-    (.trancommit hdb))
-  (txn-rollback! [this]
-    (.tranabort  hdb)))
+(extend DB
+  retro.core/Transactional
+  (tokyo/transaction-impl DB hdb HDB))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet Hash as the backend."

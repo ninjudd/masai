@@ -42,6 +42,10 @@
     (.quit rdb)
     (.disconnect rdb))
 
+  (unique-id [db]
+    (let [client (.getClient rdb)]
+      [(.getHost client) (.getPort client)]))
+
   (sync! [db]
     (.save rdb))
 

@@ -6,7 +6,7 @@
 
 (defn key-format [^String s] (identity s))
 
-(deftype DB [^MemcachedClient mdb]
+(deftype DB [^MemcachedClient mdb endpoints]
   masai.db/EphemeralDB
 
   (add-expiry! [db key val exp] (.get (.add mdb (key-format key) exp val)))
@@ -16,6 +16,9 @@
 
   (close [db]
     (.shutdown mdb))
+
+  (unique-id [db]
+    endpoints)
 
   (fetch [db key]
     (.get mdb (key-format key)))
@@ -54,4 +57,4 @@
          :or {addresses {"localhost" 11211}}} (into-map opts)
         ^java.util.List addrs (for [[addr ^Integer port] addresses]
                                 (InetSocketAddress. (InetAddress/getByName addr) port))]
-    (DB. (MemcachedClient. addrs))))
+    (DB. (MemcachedClient. addrs) (set addrs))))
