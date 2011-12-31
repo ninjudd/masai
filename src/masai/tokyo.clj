@@ -104,7 +104,7 @@
   "Create an instance of DB with Tokyo Cabinet Hash as the backend."
   [& opts]
   (let [{:keys [key-format]
-         :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
+         :or {key-format (fn [^String s] (.getBytes s))}
          :as opts}
         (into-map opts)]
     (DB. (HDB.) opts key-format)))
