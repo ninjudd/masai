@@ -2,7 +2,7 @@
   (:use [useful.map :only [into-map]]
         [useful.seq :only [lazy-loop]]
         [useful.experimental :only [order-let-if]])
-  (:require masai.db retro.core
+  (:require masai.db retro.core masai.cursor
             [masai.tokyo-common :as tokyo])
   (:import [tokyocabinet BDB BDBCUR]))
 
@@ -116,11 +116,43 @@
     (cursor-seq bdb
                 (if key (curfn jump ^bytes (key-format key))
                         (curfn last))
-                (curfn prev))))
+                (curfn prev)))
+  (cursor [db key]
+    (-> (BDBCUR. bdb)
+        (masai.cursor/jump (when key (key-format key))))))
 
 (extend DB
   retro.core/Transactional
   (tokyo/transaction-impl DB bdb BDB))
+
+(extend-type BDBCUR
+  masai.cursor/Cursor
+  (next [this]
+    (when (.next this)
+      this))
+  (prev [this]
+    (when (.prev this)
+      this))
+  (key [this]
+    (.key this))
+  (val [this]
+    (.val this))
+  (jump [this k]
+    (cond (or (nil? k)
+              (= :first k)) (.first this)
+          (= :last k)       (.last this)
+          :else             (.jump this ^bytes k))
+    this)
+
+  masai.cursor/MutableCursor
+  (put [this value]
+    (if (.put this ^bytes value BDBCUR/CPBEFORE)
+      this
+      (throw (IllegalStateException. "No record to delete"))))
+  (delete [this]
+    (if (.out this)
+      this
+      (throw (IllegalStateException. "No record to delete")))))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."

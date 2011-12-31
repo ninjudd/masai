@@ -6,6 +6,7 @@
             [masai.memcached :as memcached]
             [masai.redis :as redis]
             [masai.db :as db]
+            [masai.cursor :as cursor]
             [retro.core :as retro]))
 
 (deftest tests
@@ -103,8 +104,10 @@
   (let [db (tokyo-btree/make {:path "/tmp/masai-test-sorted-tokyo-db2" :create true :prepop true})]
     (db/open db)
     (db/truncate! db)
-    (let [bytes (.getBytes "")]
-      (doseq [x ["bar" "baz" "bam" "cat" "foo"]]
+    (let [xs ["bar" "baz" "bam" "cat" "foo"]
+          sorted-xs (sort xs)
+          bytes (.getBytes "")]
+      (doseq [x xs]
         (db/add! db x bytes))
 
       (testing "fetch-subseq works as in core"
@@ -117,4 +120,23 @@
         (are [ks kvs] (= ks (map first kvs))
               '("foo" "cat" "baz")       (db/fetch-rsubseq db > "bar")
               '("cat" "baz")             (db/fetch-rsubseq db > "bar" < "foo")
-              '("cat" "baz" "bar" "bam") (db/fetch-rsubseq db < "foo"))))))
+              '("cat" "baz" "bar" "bam") (db/fetch-rsubseq db < "foo")))
+
+      (testing "cursors"
+        (is (nil?
+             (reduce (fn [cursor x]
+                       (is (= x (String. (cursor/key cursor) "UTF-8")))
+                       (is (= (seq bytes) (seq (cursor/val cursor))))
+                       (cursor/next cursor))
+                     (db/cursor db :first)
+                     sorted-xs)))
+        (let [v (.getBytes "test")
+              c (db/cursor db :first)
+              c (cursor/next c)
+              _ (is (not (nil? c)))
+              c (cursor/put c v)
+              _ (is (= (seq v) (seq (cursor/val c))))
+              c (cursor/prev c)
+              _ (is (= (first sorted-xs) (String. (cursor/key c) "UTF-8")))
+              c (cursor/delete c)
+              _ (is (= (seq v) (seq (cursor/val c))))])))))

@@ -57,7 +57,10 @@
     the database if key is nil.")
   (fetch-rseq [db key]
     "Return a revere seq of all key/val pairs in the database starting at key, or the last key in
-    the database if key is nil."))
+    the database if key is nil.")
+  (cursor [db key]
+    "Return a Cursor on this db, starting at key. The key may be an actual string key, or one of
+    the special keywords :first or :last"))
 
 (defprotocol SortedDB
   (fetch-subseq [db test key] [db start-test start end-test end]
