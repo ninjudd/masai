@@ -107,16 +107,6 @@
     (check (.vanish bdb)))
 
   masai.db/SequentialDB
-  (fetch-seq [db key]
-    (cursor-seq bdb
-                (if key (curfn jump ^bytes (key-format key))
-                        (curfn first))
-                (curfn next)))
-  (fetch-rseq [db key]
-    (cursor-seq bdb
-                (if key (curfn jump ^bytes (key-format key))
-                        (curfn last))
-                (curfn prev)))
   (cursor [db key]
     (-> (BDBCUR. bdb)
         (masai.cursor/jump (when key (key-format key))))))

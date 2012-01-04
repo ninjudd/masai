@@ -1,4 +1,5 @@
-(ns masai.db)
+(ns masai.db
+  (:require [masai.cursor :as c]))
 
 ;; Instead of having separate, incompatible libraries to interface with
 ;; different key-value stores, Masai opts to define a common and simple
@@ -52,44 +53,46 @@
     exists."))
 
 (defprotocol SequentialDB
-  (fetch-seq [db key]
-    "Return a forward seq of all key/val pairs in the database starting at key, or the first key in
-    the database if key is nil.")
-  (fetch-rseq [db key]
-    "Return a reverse seq of all key/val pairs in the database starting at key, or the last key in
-    the database if key is nil.")
   (cursor [db key]
     "Return a Cursor on this db, starting at key. The key may be an actual string key, or one of
     the special keywords :first or :last"))
 
-(defprotocol SortedDB
-  (fetch-subseq [db test key] [db start-test start end-test end]
-    "Like clojure.core/subseq, return a forward seq of all key/val pairs between start and end.")
-  (fetch-rsubseq [db test key] [db start-test start end-test end]
-    "Like clojure.core/rsubseq, return a reverse seq of all key/val pairs between start and end."))
+(letfn [(cursor-seq [cursor next include-key? item]
+          (seq
+           (->> cursor
+                (iterate next)
+                (take-while (fn [cursor]
+                              (and (not (nil? cursor))
+                                   (include-key? (c/key cursor)))))
+                (map item))))
+        (simple-seq [direction default-key]
+          (fn [db key]
+            (cursor-seq (cursor db (or key default-key))
+                        direction
+                        (constantly true)
+                        (juxt #(String. (c/key %) "UTF-8") c/val))))]
 
-(defn- include [test key]
-  (fn [[k]] (test (compare k key) 0)))
+  (def fetch-seq  (simple-seq c/next :first))
+  (def fetch-rseq (simple-seq c/prev :last)))
 
-(defn- subseq* "A helper for creating a subseq or rsubseq using fetch-seq and fetch-rseq."
-  ([fetch-seq bounded? db test key]
-     (seq (let [include? (include test key)]
-            (if (bounded? test)
-              (drop-while (complement include?) (fetch-seq db key))
-              (take-while include?              (fetch-seq db nil))))))
-  ([fetch-seq db start-test start-key end-test end-key]
-     (seq (->> (fetch-seq db start-key)
-               (drop-while (complement (include start-test start-key)))
-               (take-while (include end-test end-key))))))
-
-(extend-type Object
-  SortedDB
-  (fetch-subseq
+(letfn [(include [test key]
+          (fn [[k]] (test (compare k key) 0)))
+        (subseq* ;; A helper for creating a subseq or rsubseq using fetch-seq and fetch-rseq.
+          ([fetch-seq bounded? db test key]
+             (seq (let [include? (include test key)]
+                    (if (bounded? test)
+                      (drop-while (complement include?) (fetch-seq db key))
+                      (take-while include?              (fetch-seq db nil))))))
+          ([fetch-seq db start-test start-key end-test end-key]
+             (seq (->> (fetch-seq db start-key)
+                       (drop-while (complement (include start-test start-key)))
+                       (take-while (include end-test end-key))))))]
+  (defn fetch-subseq
     ([db test key]
        (subseq* fetch-seq #{>= >} db test key))
     ([db start-test start end-test end]
        (subseq* fetch-seq db start-test start end-test end)))
-  (fetch-rsubseq
+  (defn fetch-rsubseq
     ([db test key]
        (subseq* fetch-rseq #{<= <} db test key))
     ([db start-test start end-test end]
