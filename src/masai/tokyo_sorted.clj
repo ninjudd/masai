@@ -128,10 +128,15 @@
   (val [this]
     (.val this))
   (jump [this k]
-    (when (case k
-            (nil :first) (.first this)
-            :last        (.last this)
-            (.jump this ^bytes k))
+    (when (cond ;; this should be (case), but getting weird transient bugs from that
+           (or (nil? k) (= :first k))
+           (.first this)
+
+           (= :last k)
+           (.last this)
+
+           :else
+           (.jump this ^bytes k))
       this))
 
   masai.cursor/MutableCursor
