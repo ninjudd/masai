@@ -138,7 +138,7 @@
   (put [this value]
     (if (.put this ^bytes value BDBCUR/CPBEFORE)
       this
-      (throw (IllegalStateException. "No record to delete"))))
+      (throw (IllegalStateException. "No record to overwrite"))))
   (delete [this]
     (if (.out this)
       this
