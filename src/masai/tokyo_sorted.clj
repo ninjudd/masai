@@ -128,11 +128,11 @@
   (val [this]
     (.val this))
   (jump [this k]
-    (cond (or (nil? k)
-              (= :first k)) (.first this)
-          (= :last k)       (.last this)
-          :else             (.jump this ^bytes k))
-    this)
+    (when (case k
+            (nil :first) (.first this)
+            :last        (.last this)
+            (.jump this ^bytes k))
+      this))
 
   masai.cursor/MutableCursor
   (put [this value]
