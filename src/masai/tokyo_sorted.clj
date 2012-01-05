@@ -109,7 +109,7 @@
   masai.db/SequentialDB
   (cursor [db key]
     (-> (BDBCUR. bdb)
-        (masai.cursor/jump (when key (key-format key))))))
+        (masai.cursor/jump (key-format key)))))
 
 (extend DB
   retro.core/Transactional
@@ -153,7 +153,10 @@
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
   [& opts]
   (let [{:keys [key-format]
-         :or {key-format (fn [^String s] (when s (bytes (.getBytes (str s)))))}
+         :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
          :as opts}
         (into-map opts)]
-    (DB. (BDB.) opts key-format)))
+    (DB. (BDB.) opts (fn [k]
+                       (if (or (nil? k) (keyword? k))
+                         k
+                         (key-format k))))))

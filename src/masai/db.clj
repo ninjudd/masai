@@ -1,5 +1,6 @@
 (ns masai.db
-  (:require [masai.cursor :as c]))
+  (:require [masai.cursor :as c])
+  (:use [useful.macro :only [macro-do]]))
 
 ;; Instead of having separate, incompatible libraries to interface with
 ;; different key-value stores, Masai opts to define a common and simple
@@ -57,23 +58,18 @@
     "Return a Cursor on this db, starting at key. The key may be an actual string key, or one of
     the special keywords :first or :last"))
 
-(letfn [(cursor-seq [cursor next include-key? item]
-          (seq
-           (->> cursor
-                (iterate next)
-                (take-while (fn [cursor]
-                              (and (not (nil? cursor))
-                                   (include-key? (c/key cursor)))))
-                (map item))))
-        (simple-seq [direction default-key]
-          (fn [db key]
-            (cursor-seq (cursor db (or key default-key))
-                        direction
-                        (constantly true)
-                        (juxt #(String. (c/key %) "UTF-8") c/val))))]
-
-  (def fetch-seq  (simple-seq c/next :first))
-  (def fetch-rseq (simple-seq c/prev :last)))
+;; have to do this as a macro instead of a function-generator, because protocol functions
+;; (like c/next) don't behave well when closed over. instead, this macro includes them as
+;; literals so that the compiler knows how to handle them.
+(macro-do [name next-fn default-key]
+  `(let [default# ~default-key]
+     (defn ~name [db# key#]
+       (seq (->> (cursor db# (or key# default#))
+                 (iterate ~next-fn)
+                 (take-while (complement nil?))
+                 (map (juxt #(String. (c/key %) "UTF-8") c/val))))))
+  fetch-seq c/next :first,
+  fetch-rseq c/prev :last)
 
 (letfn [(include [test key]
           (fn [[k]] (test (compare k key) 0)))
