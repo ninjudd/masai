@@ -33,3 +33,12 @@
     "Replace the current record's value.")
   (delete [cursor]
     "Delete the current record."))
+
+(extend nil
+  Cursor
+  (into {} (for [m [:next :prev :key :val :jump]]
+             [m (constantly nil)]))
+
+  MutableCursor
+  (into {} (for [m [:put :delete]]
+             (fn [& args] (throw (IllegalStateException. "Invalid cursor: nil"))))))
