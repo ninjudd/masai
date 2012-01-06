@@ -41,4 +41,4 @@
 
   MutableCursor
   (into {} (for [m [:put :delete]]
-             (fn [& args] (throw (IllegalStateException. "Invalid cursor: nil"))))))
+             [m (fn [& args] (throw (IllegalStateException. "Invalid cursor: nil")))])))
