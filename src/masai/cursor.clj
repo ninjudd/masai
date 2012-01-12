@@ -31,6 +31,8 @@
   exception is thrown; otherwise a cursor is returned."
   (put [cursor value]
     "Replace the current record's value.")
+  (append [cursor value]
+    "Append the c")
   (delete [cursor]
     "Delete the current record."))
 
@@ -40,5 +42,5 @@
              [m (constantly nil)]))
 
   MutableCursor
-  (into {} (for [m [:put :delete]]
+  (into {} (for [m [:put :delete :append]]
              [m (fn [& args] (throw (IllegalStateException. "Invalid cursor: nil")))])))

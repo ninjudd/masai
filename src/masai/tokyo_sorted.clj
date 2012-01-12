@@ -144,6 +144,10 @@
     (if (.put this ^bytes value BDBCUR/CPBEFORE)
       this
       (throw (IllegalStateException. "No record to overwrite"))))
+  (append [this value]
+    (if (.put this ^bytes value BDBCUR/CPCAT)
+      this
+      (throw (IllegalStateException. "No record to append to"))))
   (delete [this]
     (if (.out this)
       this
