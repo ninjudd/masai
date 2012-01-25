@@ -32,7 +32,7 @@
   (put [cursor value]
     "Replace the current record's value.")
   (append [cursor value]
-    "Append the c")
+    "Append to the current record's value.")
   (delete [cursor]
     "Delete the current record."))
 
