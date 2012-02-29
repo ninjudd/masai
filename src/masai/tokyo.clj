@@ -49,7 +49,11 @@
      (cons key (key-seq* hdb))
      nil)))
 
-(deftype DB [^HDB hdb opts key-format]
+(defrecord DB [^HDB hdb opts key-format]
+  Object
+  (toString [this]
+    (pr-str this))
+
   masai.db/DB
   (open [this]
     (let [path (:path opts)
