@@ -74,7 +74,7 @@
   (optimize! [this]
     (.optimize hdb))
   (unique-id [this]
-    (.path hdb))
+    (:path opts))
 
   (fetch [this key]
     (.get  hdb ^bytes (key-format key)))

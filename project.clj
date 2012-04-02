@@ -1,4 +1,4 @@
-(defproject masai "0.7.0"
+(defproject masai "0.7.1"
   :url "https://github.com/flatland/masai"
   :license {:name "Eclipse Public License - v 1.0"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

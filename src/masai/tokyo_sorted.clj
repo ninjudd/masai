@@ -55,7 +55,7 @@
   `(fn [^BDBCUR cur#]
      (. cur# ~method ~@args)))
 
-(deftype DB [^BDB bdb opts key-format]
+(defrecord DB [^BDB bdb opts key-format]
   masai.db/DB
   (open [db]
     (let [path  (:path opts)
@@ -78,7 +78,7 @@
   (optimize! [db]
     (.optimize bdb))
   (unique-id [db]
-    (.path bdb))
+    (:path opts))
 
   (fetch [db key]
     (.get  bdb ^bytes (key-format key)))
