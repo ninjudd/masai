@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/flatland/masai.png)](http://travis-ci.org/flatland/masai)
+
 # Masai
 
 Masai is a very simple interface to a number of key-value stores. It leverages Clojure's protocols and datatypes to make pluggable backends easy. Masai is meant to be a uniform and simple interface to pluggable backends, and not a comprehensive interface to all of them.
