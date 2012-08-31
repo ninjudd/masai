@@ -8,11 +8,12 @@ Currently supported by Masai are Tokyo Cabinent and Redis. Memcached support is 
 
 # Getting It
 
-You can get Masai from [clojars](http://clojars.org) with [cake](https://github.com/ninjudd/cake). Just add it as a dependency to your project like so:
+You can get Masai from [clojars](http://clojars.org) with [leiningen](https://github.com/technomancy/leiningen).
+Just add it as a dependency to your project like so:
 
-    [masai "0.6.0"]
+    [masai "0.7.0"]
 
-Masai doesn't download the necessary dependencies for all of its backends. Our reasoning is that it would be wasteful to require users to download dependencies for all of the backends when they only need one of them. Therefore, you'll need to add dependencies for whatever backend you plan to use. You'll want to look in Masai's project.clj for `:dev-dependencies`. Those are the dependencies that we test Masai with for each backend. Use whatever dependencies you need from there.
+Masai doesn't download the necessary dependencies for all of its backends. Our reasoning is that it would be wasteful to require users to download dependencies for all of the backends when they only need one of them. Therefore, you'll need to add dependencies for whatever backend you plan to use. You'll want to look in Masai's project.clj for the `:dev` profile. Those are the dependencies that we test Masai with for each backend. Use whatever dependencies you need from there.
 
 # Usage
 
