@@ -55,24 +55,33 @@
   `(fn [^BDBCUR cur#]
      (. cur# ~method ~@args)))
 
+;; tokyocabinet makes it an error to open an open db, or close a closed one.
+;; we'd prefer that it be a no-op, so we just ignore the request.
+(def ^:private open-paths (atom #{}))
+
 (defrecord DB [^BDB bdb opts key-format]
   masai.db/DB
   (open [db]
-    (let [path  (:path opts)
-          bnum  (or (:bnum opts)  0)
-          apow  (or (:apow opts) -1)
-          fpow  (or (:fpow opts) -1)
-          lmemb (or (:lmemb opts) 0)
-          nmemb (or (:nmemb opts) 0)]
-      (.mkdirs (.getParentFile (java.io.File. ^String path)))
-      (check (.tune bdb lmemb nmemb bnum apow fpow (tflags opts)))
-      (when-let [[lcnum rcnum] (:cache opts)]
-        (check (.setcache bdb lcnum rcnum)))
-      (when-let [xmsiz (:xmsiz opts)]
-        (check (.setxmsiz bdb xmsiz)))
-      (check (.open bdb path (oflags opts)))))
+    (let [path  (:path opts)]
+      (when-not (@open-paths path)
+        (let [bnum  (or (:bnum opts)  0)
+              apow  (or (:apow opts) -1)
+              fpow  (or (:fpow opts) -1)
+              lmemb (or (:lmemb opts) 0)
+              nmemb (or (:nmemb opts) 0)]
+          (.mkdirs (.getParentFile (java.io.File. ^String path)))
+          (check (.tune bdb lmemb nmemb bnum apow fpow (tflags opts)))
+          (when-let [[lcnum rcnum] (:cache opts)]
+            (check (.setcache bdb lcnum rcnum)))
+          (when-let [xmsiz (:xmsiz opts)]
+            (check (.setxmsiz bdb xmsiz)))
+          (check (.open bdb path (oflags opts)))
+          (swap! open-paths conj path)))))
   (close [db]
-    (.close bdb))
+    (let [path (:path opts)]
+      (when (@open-paths path)
+        (.close bdb)
+        (swap! open-paths disj path))))
   (sync! [db]
     (.sync  bdb))
   (optimize! [db]

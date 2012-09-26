@@ -49,6 +49,10 @@
      (cons key (key-seq* hdb))
      nil)))
 
+;; tokyocabinet makes it an error to open an open db, or close a closed one.
+;; we'd prefer that it be a no-op, so we just ignore the request.
+(def ^:private open-paths (atom #{}))
+
 (defrecord DB [^HDB hdb opts key-format]
   Object
   (toString [this]
@@ -56,19 +60,24 @@
 
   masai.db/DB
   (open [this]
-    (let [path (:path opts)
-          bnum (or (:bnum opts)  0)
-          apow (or (:apow opts) -1)
-          fpow (or (:fpow opts) -1)]
-      (.mkdirs (.getParentFile (java.io.File. ^String path)))
-      (check (.tune hdb bnum apow fpow (tflags opts)))
-      (when-let [rcnum (:cache opts)]
-        (check (.setcache hdb rcnum)))
-      (when-let [xmsiz (:xmsiz opts)]
-        (check (.setxmsiz hdb xmsiz)))
-      (check (.open hdb path (oflags opts)))))
+    (let [path (:path opts)]
+      (when-not (@open-paths path)
+        (let [bnum (or (:bnum opts)  0)
+              apow (or (:apow opts) -1)
+              fpow (or (:fpow opts) -1)]
+          (.mkdirs (.getParentFile (java.io.File. ^String path)))
+          (check (.tune hdb bnum apow fpow (tflags opts)))
+          (when-let [rcnum (:cache opts)]
+            (check (.setcache hdb rcnum)))
+          (when-let [xmsiz (:xmsiz opts)]
+            (check (.setxmsiz hdb xmsiz)))
+          (check (.open hdb path (oflags opts)))
+          (swap! open-paths conj path)))))
   (close [this]
-    (.close hdb))
+    (let [path (:path opts)]
+      (when (@open-paths path)
+        (.close hdb)
+        (swap! open-paths disj path))))
   (sync! [this]
     (.sync  hdb))
   (optimize! [this]
