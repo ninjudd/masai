@@ -1,5 +1,5 @@
-(ns masai.db
-  (:require [masai.cursor :as c])
+(ns flatland.masai.db
+  (:require [flatland.masai.cursor :as c])
   (:use [useful.macro :only [macro-do]]))
 
 ;; Instead of having separate, incompatible libraries to interface with

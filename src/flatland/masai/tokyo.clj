@@ -1,8 +1,8 @@
-(ns masai.tokyo
+(ns flatland.masai.tokyo
   (:use [useful.map :only [into-map]]
         [useful.utils :only [thread-local]])
-  (:require masai.db retro.core
-            [masai.tokyo-common :as tokyo])
+  (:require flatland.masai.db retro.core
+            [flatland.masai.tokyo-common :as tokyo])
   (:import [tokyocabinet HDB]))
 
 (def compress
@@ -58,7 +58,7 @@
   (toString [this]
     (pr-str this))
 
-  masai.db/DB
+  flatland.masai.db/DB
   (open [this]
     (let [path (:path opts)]
       (when-not (@open-paths path)
@@ -90,7 +90,7 @@
   (len [this key]
     (.vsiz hdb ^bytes (key-format key)))
   (exists? [this key]
-    (not (= -1 (masai.db/len this key))))
+    (not (= -1 (flatland.masai.db/len this key))))
   (key-seq [this]
     (.iterinit hdb)
     (key-seq* hdb))

@@ -1,9 +1,9 @@
-(ns masai.tokyo-sorted
+(ns flatland.masai.tokyo-sorted
   (:use [useful.map :only [into-map]]
         [useful.seq :only [lazy-loop]]
         [useful.experimental :only [order-let-if]])
-  (:require masai.db retro.core masai.cursor
-            [masai.tokyo-common :as tokyo])
+  (:require flatland.masai.db retro.core flatland.masai.cursor
+            [flatland.masai.tokyo-common :as tokyo])
   (:import [tokyocabinet BDB BDBCUR]))
 
 (def compress
@@ -60,7 +60,7 @@
 (def ^:private open-paths (atom #{}))
 
 (defrecord DB [^BDB bdb opts key-format]
-  masai.db/DB
+  flatland.masai.db/DB
   (open [db]
     (let [path  (:path opts)]
       (when-not (@open-paths path)
@@ -94,7 +94,7 @@
   (len [db key]
     (.vsiz bdb ^bytes (key-format key)))
   (exists? [db key]
-    (not (= -1 (masai.db/len db key))))
+    (not (= -1 (flatland.masai.db/len db key))))
   (key-seq [db]
     (.iterinit bdb)
     (lazy-loop []
@@ -115,17 +115,17 @@
   (truncate! [db]
     (check (.vanish bdb)))
 
-  masai.db/SequentialDB
+  flatland.masai.db/SequentialDB
   (cursor [db key]
     (-> (BDBCUR. bdb)
-        (masai.cursor/jump (key-format key)))))
+        (flatland.masai.cursor/jump (key-format key)))))
 
 (extend DB
   retro.core/Transactional
   (tokyo/transaction-impl DB bdb BDB))
 
 (extend-type BDBCUR
-  masai.cursor/Cursor
+  flatland.masai.cursor/Cursor
   (next [this]
     (when (.next this)
       this))
@@ -148,7 +148,7 @@
            (.jump this ^bytes k))
       this))
 
-  masai.cursor/MutableCursor
+  flatland.masai.cursor/MutableCursor
   (put [this value]
     (if (.put this ^bytes value BDBCUR/CPBEFORE)
       this

@@ -1,7 +1,7 @@
-(ns masai.redis
+(ns flatland.masai.redis
   (:use [useful.map :only [into-map]]
         [clojure.stacktrace :only [root-cause]])
-  (:require masai.db)
+  (:require flatland.masai.db)
   (:import redis.clients.jedis.BinaryJedis))
 
 (defn i-to-b
@@ -18,16 +18,16 @@
   `(if (.isConnected ~db) ~@body))
 
 (deftype DB [^BinaryJedis rdb opts key-format]
-  masai.db/EphemeralDB
+  flatland.masai.db/EphemeralDB
 
   (add-expiry! [db key val exp]
-    (masai.db/add! db key val)
+    (flatland.masai.db/add! db key val)
     (.expire rdb key exp))
 
   (put-expiry! [db key val exp]
     (.setex rdb key exp (bytes val)))
 
-  masai.db/DB
+  flatland.masai.db/DB
 
   (open [db]
     (when-let [pass (:password opts)]
@@ -55,7 +55,7 @@
 
   (len [db key]
     (if-connected rdb
-      (if-let [record (masai.db/fetch db key)]
+      (if-let [record (flatland.masai.db/fetch db key)]
         (count record)
         -1)
       -1))

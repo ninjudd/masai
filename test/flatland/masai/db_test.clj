@@ -1,12 +1,12 @@
-(ns masai.db-test
+(ns flatland.masai.db-test
   (:refer-clojure :exclude [get count sync])
   (:use clojure.test useful.debug)
-  (:require [masai.tokyo :as tokyo]
-            [masai.tokyo-sorted :as tokyo-btree]
-            [masai.memcached :as memcached]
-            [masai.redis :as redis]
-            [masai.db :as db]
-            [masai.cursor :as cursor]
+  (:require [flatland.masai.tokyo :as tokyo]
+            [flatland.masai.tokyo-sorted :as tokyo-btree]
+            [flatland.masai.memcached :as memcached]
+            [flatland.masai.redis :as redis]
+            [flatland.masai.db :as db]
+            [flatland.masai.cursor :as cursor]
             [retro.core :as retro]))
 
 (deftest tests

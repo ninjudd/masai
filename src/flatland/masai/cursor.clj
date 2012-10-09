@@ -1,4 +1,4 @@
-(ns masai.cursor
+(ns flatland.masai.cursor
   (:refer-clojure :exclude [next key val]))
 
 (defprotocol Cursor
