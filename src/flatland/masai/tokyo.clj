@@ -45,7 +45,7 @@
 (defn- key-seq*
   "Get a truly lazy sequence of the keys in the database." [^HDB hdb]
   (lazy-seq
-   (if-let [key (.iternext2 hdb)]
+   (if-let [key (.iternext hdb)]
      (cons key (key-seq* hdb))
      nil)))
 
@@ -53,7 +53,7 @@
 ;; we'd prefer that it be a no-op, so we just ignore the request.
 (def ^:private open-paths (atom #{}))
 
-(defrecord DB [^HDB hdb opts key-format]
+(defrecord DB [^HDB hdb opts]
   Object
   (toString [this]
     (pr-str this))
@@ -86,9 +86,9 @@
     (:path opts))
 
   (fetch [this key]
-    (.get  hdb ^bytes (key-format key)))
+    (.get  hdb ^bytes key))
   (len [this key]
-    (.vsiz hdb ^bytes (key-format key)))
+    (.vsiz hdb ^bytes key))
   (exists? [this key]
     (not (= -1 (flatland.masai.db/len this key))))
   (key-seq [this]
@@ -96,16 +96,16 @@
     (key-seq* hdb))
 
   (add! [this key val]
-    (check (.putkeep hdb ^bytes (key-format key) (bytes val))))
+    (check (.putkeep hdb ^bytes key (bytes val))))
   (put! [this key val]
-    (check (.put hdb ^bytes (key-format key) (bytes val))))
+    (check (.put hdb ^bytes key (bytes val))))
   (append! [this key val]
-    (check (.putcat  hdb ^bytes (key-format key) (bytes val))))
+    (check (.putcat  hdb ^bytes key (bytes val))))
   (inc! [this key i]
-    (.addint hdb ^bytes (key-format key) ^Integer i))
+    (.addint hdb ^bytes key ^Integer i))
 
   (delete! [db key]
-    (check (.out hdb ^bytes (key-format key))))
+    (check (.out hdb ^bytes key)))
   (truncate! [db]
     (check (.vanish hdb))))
 
@@ -116,8 +116,4 @@
 (defn make
   "Create an instance of DB with Tokyo Cabinet Hash as the backend."
   [& opts]
-  (let [{:keys [key-format]
-         :or {key-format (fn [^String s] (.getBytes s))}
-         :as opts}
-        (into-map opts)]
-    (DB. (HDB.) opts key-format)))
+  (DB. (HDB.) (into-map opts)))

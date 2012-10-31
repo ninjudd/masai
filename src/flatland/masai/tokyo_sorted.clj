@@ -39,27 +39,11 @@
          ~BDB/ENOREC false
          (throw (java.io.IOException. (.errmsg ~'bdb) )))))
 
-(defn- cursor-seq
-  "Return a lazy cursor sequence by initializing the cursor by calling first and advances the cursor
-  with next."
-  [bdb first next]
-  (let [cursor (BDBCUR. bdb)]
-    (lazy-loop [more? (first cursor)]
-      (when more?
-        (cons [(.key2 cursor) (.val cursor)]
-              (lazy-recur (next cursor)))))))
-
-(defmacro curfn
-  "Like memfn, except type hinted for BDBCUR."
-  [method & args]
-  `(fn [^BDBCUR cur#]
-     (. cur# ~method ~@args)))
-
 ;; tokyocabinet makes it an error to open an open db, or close a closed one.
 ;; we'd prefer that it be a no-op, so we just ignore the request.
 (def ^:private open-paths (atom #{}))
 
-(defrecord DB [^BDB bdb opts key-format]
+(defrecord DB [^BDB bdb opts]
   flatland.masai.db/DB
   (open [db]
     (let [path  (:path opts)]
@@ -90,35 +74,35 @@
     (:path opts))
 
   (fetch [db key]
-    (.get  bdb ^bytes (key-format key)))
+    (.get  bdb ^bytes key))
   (len [db key]
-    (.vsiz bdb ^bytes (key-format key)))
+    (.vsiz bdb ^bytes key))
   (exists? [db key]
     (not (= -1 (flatland.masai.db/len db key))))
   (key-seq [db]
     (.iterinit bdb)
     (lazy-loop []
-      (when-let [key (.iternext2 bdb)]
+      (when-let [key (.iternext bdb)]
         (cons key (lazy-recur)))))
 
   (add! [db key val]
-    (check (.putkeep bdb ^bytes (key-format key) (bytes val))))
+    (check (.putkeep bdb ^bytes key (bytes val))))
   (put! [db key val]
-    (check (.put bdb ^bytes (key-format key) (bytes val))))
+    (check (.put bdb ^bytes key (bytes val))))
   (append! [db key val]
-    (check (.putcat bdb ^bytes (key-format key) (bytes val))))
+    (check (.putcat bdb ^bytes key (bytes val))))
   (inc! [db key i]
-    (.addint bdb ^bytes (key-format key) ^Integer i))
+    (.addint bdb ^bytes key ^Integer i))
 
   (delete! [db key]
-    (check (.out bdb ^bytes (key-format key))))
+    (check (.out bdb ^bytes key)))
   (truncate! [db]
     (check (.vanish bdb)))
 
   flatland.masai.db/SequentialDB
   (cursor [db key]
     (-> (BDBCUR. bdb)
-        (flatland.masai.cursor/jump (key-format key)))))
+        (flatland.masai.cursor/jump key))))
 
 (extend DB
   retro.core/Transactional
@@ -165,11 +149,4 @@
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
   [& opts]
-  (let [{:keys [key-format]
-         :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
-         :as opts}
-        (into-map opts)]
-    (DB. (BDB.) opts (fn [k]
-                       (if (or (nil? k) (keyword? k))
-                         k
-                         (key-format k))))))
+  (DB. (BDB.) (into-map opts)))

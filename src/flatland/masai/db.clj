@@ -1,6 +1,7 @@
 (ns flatland.masai.db
-  (:require [flatland.masai.cursor :as c])
-  (:use [useful.macro :only [macro-do]]))
+  (:require [flatland.masai.cursor :as c]
+            [useful.macro :refer [macro-do]]
+            [useful.io :refer [compare-bytes]]))
 
 ;; Instead of having separate, incompatible libraries to interface with
 ;; different key-value stores, Masai opts to define a common and simple
@@ -67,12 +68,12 @@
        (seq (->> (cursor db# (or key# default#))
                  (iterate ~next-fn)
                  (take-while (complement nil?))
-                 (map (juxt #(String. (c/key %) "UTF-8") c/val))))))
+                 (map (juxt c/key c/val))))))
   fetch-seq c/next :first,
   fetch-rseq c/prev :last)
 
 (letfn [(include [test key]
-          (fn [[k]] (test (compare k key) 0)))
+          (fn [[k]] (test (compare-bytes k key) 0)))
         (subseq* ;; A helper for creating a subseq or rsubseq using fetch-seq and fetch-rseq.
           ([fetch-seq bounded? db test key]
              (seq (let [include? (include test key)]

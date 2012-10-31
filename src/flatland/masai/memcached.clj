@@ -4,6 +4,10 @@
   (:import net.spy.memcached.MemcachedClient
            [java.net InetSocketAddress InetAddress]))
 
+;; TODO fix this to reify a transcoder that throws an exception if the val is
+;; not a byte array and to base64 encode the keys. Then reenable and fix the
+;; tests.
+
 (defn key-format [^String s] (identity s))
 
 (deftype DB [^MemcachedClient mdb endpoints]
