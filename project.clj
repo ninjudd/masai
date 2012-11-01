@@ -4,7 +4,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :description "Key-value database for Clojure with pluggable backends."
   :dependencies [[org.clojure/clojure "1.4.0"]
-                 [useful "0.8.6-SNAPSHOT"]
+                 [useful "0.8.7-SNAPSHOT"]
                  [retro "0.7.0"]]
   :profiles {:1.5 {:dependencies [[org.clojure/clojure "1.5.0-master-SNAPSHOT"]]}
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
