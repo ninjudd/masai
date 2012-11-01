@@ -59,18 +59,15 @@
     "Return a Cursor on this db, starting at key. The key may be an actual string key, or one of
     the special keywords :first or :last"))
 
-;; have to do this as a macro instead of a function-generator, because protocol functions
-;; (like c/next) don't behave well when closed over. instead, this macro includes them as
-;; literals so that the compiler knows how to handle them.
-(macro-do [name next-fn default-key]
-  `(let [default# ~default-key]
-     (defn ~name [db# key#]
-       (seq (->> (cursor db# (or key# default#))
-                 (iterate ~next-fn)
+(defn cursor-iterator
+  ([default next-fn]
+     (cursor-iterator default next-fn (juxt c/key c/val)))
+  ([default next-fn val-fn]
+     (fn [db key]
+       (seq (->> (cursor db (or key default))
+                 (iterate next-fn)
                  (take-while (complement nil?))
-                 (map (juxt c/key c/val))))))
-  fetch-seq c/next :first,
-  fetch-rseq c/prev :last)
+                 (map val-fn))))))
 
 (letfn [(include [test key]
           (fn [[k]] (test (compare-bytes k key) 0)))
@@ -86,11 +83,15 @@
                        (take-while (include end-test end-key))))))]
   (defn fetch-subseq
     ([db test key]
-       (subseq* fetch-seq #{>= >} db test key))
+       (-> (cursor-iterator :first c/next)
+           (subseq* #{>= >} db test key)))
     ([db start-test start end-test end]
-       (subseq* fetch-seq db start-test start end-test end)))
+       (-> (cursor-iterator :first c/next)
+           (subseq* db start-test start end-test end))))
   (defn fetch-rsubseq
     ([db test key]
-       (subseq* fetch-rseq #{<= <} db test key))
+       (-> (cursor-iterator :last c/prev)
+           (subseq* #{<= <} db test key)))
     ([db start-test start end-test end]
-       (subseq* fetch-rseq db end-test end start-test start))))
+       (-> (cursor-iterator :last c/prev)
+           (subseq* db end-test end start-test start)))))
