@@ -2,5 +2,4 @@ pom.xml
 *.jar
 *.war
 target/
-build
 .lein*
