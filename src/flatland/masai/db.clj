@@ -70,28 +70,47 @@
                  (map val-fn))))))
 
 (letfn [(include [test key]
-          (fn [[k]] (test (compare-bytes k key) 0)))
-        (subseq* ;; A helper for creating a subseq or rsubseq using fetch-seq and fetch-rseq.
-          ([fetch-seq bounded? db test key]
-             (seq (let [include? (include test key)]
-                    (if (bounded? test)
-                      (drop-while (complement include?) (fetch-seq db key))
-                      (take-while include?              (fetch-seq db nil))))))
-          ([fetch-seq db start-test start-key end-test end-key]
-             (seq (->> (fetch-seq db start-key)
-                       (drop-while (complement (include start-test start-key)))
-                       (take-while (include end-test end-key))))))]
-  (defn fetch-subseq
-    ([db test key]
-       (-> (cursor-iterator :first c/next)
-           (subseq* #{>= >} db test key)))
-    ([db start-test start end-test end]
-       (-> (cursor-iterator :first c/next)
-           (subseq* db start-test start end-test end))))
-  (defn fetch-rsubseq
-    ([db test key]
-       (-> (cursor-iterator :last c/prev)
-           (subseq* #{<= <} db test key)))
-    ([db start-test start end-test end]
-       (-> (cursor-iterator :last c/prev)
-           (subseq* db end-test end start-test start)))))
+          (fn [[k]] (test (compare-bytes k key) 0)))]
+  (defn- subseq*
+    "A helper for creating a subseq or rsubseq using fetch-seq and fetch-rseq."
+    ([fetch-seq bounded? db test key]
+       (seq (let [include? (include test key)]
+              (if (bounded? test)
+                (drop-while (complement include?) (fetch-seq db key))
+                (take-while include?              (fetch-seq db nil))))))
+    ([fetch-seq db start-test start-key end-test end-key]
+       (seq (->> (fetch-seq db start-key)
+                 (drop-while (complement (include start-test start-key)))
+                 (take-while (include end-test end-key)))))))
+
+(defn fetch-subseq
+  ([db test key]
+     (-> (cursor-iterator :first c/next)
+         (subseq* #{>= >} db test key)))
+  ([db start-test start end-test end]
+     (-> (cursor-iterator :first c/next)
+         (subseq* db start-test start end-test end))))
+
+(defn fetch-key-subseq
+  ([db test key]
+     (-> (cursor-iterator :first c/next c/key)
+         (subseq* #{>= >} db test key)))
+  ([db start-test start end-test end]
+     (-> (cursor-iterator :first c/next c/key)
+         (subseq* db start-test start end-test end))))
+
+(defn fetch-rsubseq
+  ([db test key]
+     (-> (cursor-iterator :last c/prev)
+         (subseq* #{<= <} db test key)))
+  ([db start-test start end-test end]
+     (-> (cursor-iterator :last c/prev)
+         (subseq* db end-test end start-test start))))
+
+(defn fetch-key-rsubseq
+  ([db test key]
+     (-> (cursor-iterator :last c/prev c/key)
+         (subseq* #{<= <} db test key)))
+  ([db start-test start end-test end]
+     (-> (cursor-iterator :last c/prev c/key)
+         (subseq* db end-test end start-test start))))
