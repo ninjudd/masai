@@ -123,6 +123,18 @@
              ["cat" "baz"]             (db/fetch-rsubseq db > (.getBytes "bar") < (.getBytes "foo"))
              ["cat" "baz" "bar" "bam"] (db/fetch-rsubseq db < (.getBytes "foo"))))
 
+      (testing "fetch-key-subseq works as in core"
+        (are [ks keys] (= ks (map #(String. %) keys))
+             ["baz" "cat" "foo"]       (db/fetch-key-subseq db > (.getBytes "bar"))
+             ["baz" "cat"]             (db/fetch-key-subseq db > (.getBytes "bar") < (.getBytes "foo"))
+             ["bam" "bar" "baz" "cat"] (db/fetch-key-subseq db < (.getBytes "foo"))))
+
+      (testing "fetch-key-rsubseq works as in core"
+        (are [ks kvs] (= ks (map #(String. %) kvs))
+             ["foo" "cat" "baz"]       (db/fetch-key-rsubseq db > (.getBytes "bar"))
+             ["cat" "baz"]             (db/fetch-key-rsubseq db > (.getBytes "bar") < (.getBytes "foo"))
+             ["cat" "baz" "bar" "bam"] (db/fetch-key-rsubseq db < (.getBytes "foo"))))
+
       (testing "cursors"
         (is (nil?
              (reduce (fn [cursor x]
