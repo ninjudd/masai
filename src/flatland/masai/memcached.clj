@@ -1,5 +1,5 @@
 (ns flatland.masai.memcached
-  (:use [useful.map :only [into-map]])
+  (:use [flatland.useful.map :only [into-map]])
   (:require flatland.masai.db)
   (:import net.spy.memcached.MemcachedClient
            [java.net InetSocketAddress InetAddress]))

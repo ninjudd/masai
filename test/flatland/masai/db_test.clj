@@ -1,13 +1,13 @@
 (ns flatland.masai.db-test
   (:refer-clojure :exclude [get count sync])
-  (:use clojure.test useful.debug)
+  (:use clojure.test flatland.useful.debug)
   (:require [flatland.masai.tokyo :as tokyo]
             [flatland.masai.tokyo-sorted :as tokyo-btree]
             [flatland.masai.memcached :as memcached]
             [flatland.masai.redis :as redis]
             [flatland.masai.db :as db]
             [flatland.masai.cursor :as cursor]
-            [retro.core :as retro]))
+            [flatland.retro.core :as retro]))
 
 (def b (memfn getBytes))
 

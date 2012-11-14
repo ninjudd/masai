@@ -1,7 +1,7 @@
 (ns flatland.masai.tokyo
-  (:use [useful.map :only [into-map]]
-        [useful.utils :only [thread-local]])
-  (:require flatland.masai.db retro.core
+  (:use [flatland.useful.map :only [into-map]]
+        [flatland.useful.utils :only [thread-local]])
+  (:require flatland.masai.db flatland.retro.core
             [flatland.masai.tokyo-common :as tokyo])
   (:import [tokyocabinet HDB]))
 
@@ -110,7 +110,7 @@
     (check (.vanish hdb))))
 
 (extend DB
-  retro.core/Transactional
+  flatland.retro.core/Transactional
   (tokyo/transaction-impl DB hdb HDB))
 
 (defn make

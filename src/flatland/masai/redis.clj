@@ -1,5 +1,5 @@
 (ns flatland.masai.redis
-  (:use [useful.map :only [into-map]]
+  (:use [flatland.useful.map :only [into-map]]
         [clojure.stacktrace :only [root-cause]])
   (:require flatland.masai.db)
   (:import redis.clients.jedis.BinaryJedis))

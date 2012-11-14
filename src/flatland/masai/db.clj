@@ -1,7 +1,7 @@
 (ns flatland.masai.db
   (:require [flatland.masai.cursor :as c]
-            [useful.macro :refer [macro-do]]
-            [useful.io :refer [compare-bytes]]))
+            [flatland.useful.macro :refer [macro-do]]
+            [flatland.useful.io :refer [compare-bytes]]))
 
 ;; Instead of having separate, incompatible libraries to interface with
 ;; different key-value stores, Masai opts to define a common and simple

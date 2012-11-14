@@ -1,8 +1,8 @@
 (ns flatland.masai.tokyo-sorted
-  (:use [useful.map :only [into-map]]
-        [useful.seq :only [lazy-loop]]
-        [useful.experimental :only [order-let-if]])
-  (:require flatland.masai.db retro.core flatland.masai.cursor
+  (:use [flatland.useful.map :only [into-map]]
+        [flatland.useful.seq :only [lazy-loop]]
+        [flatland.useful.experimental :only [order-let-if]])
+  (:require flatland.masai.db flatland.retro.core flatland.masai.cursor
             [flatland.masai.tokyo-common :as tokyo])
   (:import [tokyocabinet BDB BDBCUR]))
 
@@ -105,7 +105,7 @@
         (flatland.masai.cursor/jump key))))
 
 (extend DB
-  retro.core/Transactional
+  flatland.retro.core/Transactional
   (tokyo/transaction-impl DB bdb BDB))
 
 (extend-type BDBCUR
