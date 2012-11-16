@@ -1,9 +1,9 @@
-(ns masai.tokyo-sorted
-  (:use [useful.map :only [into-map]]
-        [useful.seq :only [lazy-loop]]
-        [useful.experimental :only [order-let-if]])
-  (:require masai.db retro.core masai.cursor
-            [masai.tokyo-common :as tokyo])
+(ns flatland.masai.tokyo-sorted
+  (:use [flatland.useful.map :only [into-map]]
+        [flatland.useful.seq :only [lazy-loop]]
+        [flatland.useful.experimental :only [order-let-if]])
+  (:require flatland.masai.db flatland.retro.core flatland.masai.cursor
+            [flatland.masai.tokyo-common :as tokyo])
   (:import [tokyocabinet BDB BDBCUR]))
 
 (def compress
@@ -39,84 +39,77 @@
          ~BDB/ENOREC false
          (throw (java.io.IOException. (.errmsg ~'bdb) )))))
 
-(defn- cursor-seq
-  "Return a lazy cursor sequence by initializing the cursor by calling first and advances the cursor
-  with next."
-  [bdb first next]
-  (let [cursor (BDBCUR. bdb)]
-    (lazy-loop [more? (first cursor)]
-      (when more?
-        (cons [(.key2 cursor) (.val cursor)]
-              (lazy-recur (next cursor)))))))
+;; tokyocabinet makes it an error to open an open db, or close a closed one.
+;; we'd prefer that it be a no-op, so we just ignore the request.
+(def ^:private open-paths (atom #{}))
 
-(defmacro curfn
-  "Like memfn, except type hinted for BDBCUR."
-  [method & args]
-  `(fn [^BDBCUR cur#]
-     (. cur# ~method ~@args)))
-
-(deftype DB [^BDB bdb opts key-format]
-  masai.db/DB
+(defrecord DB [^BDB bdb opts]
+  flatland.masai.db/DB
   (open [db]
-    (let [path  (:path opts)
-          bnum  (or (:bnum opts)  0)
-          apow  (or (:apow opts) -1)
-          fpow  (or (:fpow opts) -1)
-          lmemb (or (:lmemb opts) 0)
-          nmemb (or (:nmemb opts) 0)]
-      (.mkdirs (.getParentFile (java.io.File. ^String path)))
-      (check (.tune bdb lmemb nmemb bnum apow fpow (tflags opts)))
-      (when-let [[lcnum rcnum] (:cache opts)]
-        (check (.setcache bdb lcnum rcnum)))
-      (when-let [xmsiz (:xmsiz opts)]
-        (check (.setxmsiz bdb xmsiz)))
-      (check (.open bdb path (oflags opts)))))
+    (let [path  (:path opts)]
+      (when-not (@open-paths path)
+        (let [bnum  (or (:bnum opts)  0)
+              apow  (or (:apow opts) -1)
+              fpow  (or (:fpow opts) -1)
+              lmemb (or (:lmemb opts) 0)
+              nmemb (or (:nmemb opts) 0)]
+          (.mkdirs (.getParentFile (java.io.File. ^String path)))
+          (check (.tune bdb lmemb nmemb bnum apow fpow (tflags opts)))
+          (when-let [[lcnum rcnum] (:cache opts)]
+            (check (.setcache bdb lcnum rcnum)))
+          (when-let [xmsiz (:xmsiz opts)]
+            (check (.setxmsiz bdb xmsiz)))
+          (check (.open bdb path (oflags opts)))
+          (swap! open-paths conj path)))))
   (close [db]
-    (.close bdb))
+    (let [path (:path opts)]
+      (when (@open-paths path)
+        (.close bdb)
+        (swap! open-paths disj path))))
   (sync! [db]
     (.sync  bdb))
   (optimize! [db]
     (.optimize bdb))
   (unique-id [db]
-    (.path bdb))
+    (:path opts))
 
   (fetch [db key]
-    (.get  bdb ^bytes (key-format key)))
+    (.get  bdb ^bytes key))
   (len [db key]
-    (.vsiz bdb ^bytes (key-format key)))
+    (.vsiz bdb ^bytes key))
   (exists? [db key]
-    (not (= -1 (masai.db/len db key))))
+    (not (= -1 (flatland.masai.db/len db key))))
   (key-seq [db]
     (.iterinit bdb)
     (lazy-loop []
-      (when-let [key (.iternext2 bdb)]
+      (when-let [key (.iternext bdb)]
         (cons key (lazy-recur)))))
 
   (add! [db key val]
-    (check (.putkeep bdb ^bytes (key-format key) (bytes val))))
+    (check (.putkeep bdb ^bytes key (bytes val))))
   (put! [db key val]
-    (check (.put bdb ^bytes (key-format key) (bytes val))))
+    (check (.put bdb ^bytes key (bytes val))))
   (append! [db key val]
-    (check (.putcat bdb ^bytes (key-format key) (bytes val))))
+    (check (.putcat bdb ^bytes key (bytes val))))
   (inc! [db key i]
-    (.addint bdb ^bytes (key-format key) ^Integer i))
+    (.addint bdb ^bytes key ^Integer i))
 
   (delete! [db key]
-    (check (.out bdb ^bytes (key-format key))))
+    (check (.out bdb ^bytes key)))
   (truncate! [db]
     (check (.vanish bdb)))
 
-  masai.db/SequentialDB
+  flatland.masai.db/SequentialDB
   (cursor [db key]
     (-> (BDBCUR. bdb)
-        (masai.cursor/jump (key-format key)))))
+        (flatland.masai.cursor/jump key))))
 
 (extend DB
-  retro.core/Transactional
+  flatland.retro.core/Transactional
   (tokyo/transaction-impl DB bdb BDB))
 
 (extend-type BDBCUR
-  masai.cursor/Cursor
+  flatland.masai.cursor/Cursor
   (next [this]
     (when (.next this)
       this))
@@ -139,7 +132,7 @@
            (.jump this ^bytes k))
       this))
 
-  masai.cursor/MutableCursor
+  flatland.masai.cursor/MutableCursor
   (put [this value]
     (if (.put this ^bytes value BDBCUR/CPBEFORE)
       this
@@ -156,11 +149,4 @@
 (defn make
   "Create an instance of DB with Tokyo Cabinet B-Tree as the backend."
   [& opts]
-  (let [{:keys [key-format]
-         :or {key-format (fn [^String s] (bytes (.getBytes (str s))))}
-         :as opts}
-        (into-map opts)]
-    (DB. (BDB.) opts (fn [k]
-                       (if (or (nil? k) (keyword? k))
-                         k
-                         (key-format k))))))
+  (DB. (BDB.) (into-map opts)))

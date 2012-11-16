@@ -1,8 +1,8 @@
-(ns masai.tokyo
-  (:use [useful.map :only [into-map]]
-        [useful.utils :only [thread-local]])
-  (:require masai.db retro.core
-            [masai.tokyo-common :as tokyo])
+(ns flatland.masai.tokyo
+  (:use [flatland.useful.map :only [into-map]]
+        [flatland.useful.utils :only [thread-local]])
+  (:require flatland.masai.db flatland.retro.core
+            [flatland.masai.tokyo-common :as tokyo])
   (:import [tokyocabinet HDB]))
 
 (def compress
@@ -45,70 +45,75 @@
 (defn- key-seq*
   "Get a truly lazy sequence of the keys in the database." [^HDB hdb]
   (lazy-seq
-   (if-let [key (.iternext2 hdb)]
+   (if-let [key (.iternext hdb)]
      (cons key (key-seq* hdb))
      nil)))
 
-(defrecord DB [^HDB hdb opts key-format]
+;; tokyocabinet makes it an error to open an open db, or close a closed one.
+;; we'd prefer that it be a no-op, so we just ignore the request.
+(def ^:private open-paths (atom #{}))
+
+(defrecord DB [^HDB hdb opts]
   Object
   (toString [this]
     (pr-str this))
 
-  masai.db/DB
+  flatland.masai.db/DB
   (open [this]
-    (let [path (:path opts)
-          bnum (or (:bnum opts)  0)
-          apow (or (:apow opts) -1)
-          fpow (or (:fpow opts) -1)]
-      (.mkdirs (.getParentFile (java.io.File. ^String path)))
-      (check (.tune hdb bnum apow fpow (tflags opts)))
-      (when-let [rcnum (:cache opts)]
-        (check (.setcache hdb rcnum)))
-      (when-let [xmsiz (:xmsiz opts)]
-        (check (.setxmsiz hdb xmsiz)))
-      (check (.open hdb path (oflags opts)))))
+    (let [path (:path opts)]
+      (when-not (@open-paths path)
+        (let [bnum (or (:bnum opts)  0)
+              apow (or (:apow opts) -1)
+              fpow (or (:fpow opts) -1)]
+          (.mkdirs (.getParentFile (java.io.File. ^String path)))
+          (check (.tune hdb bnum apow fpow (tflags opts)))
+          (when-let [rcnum (:cache opts)]
+            (check (.setcache hdb rcnum)))
+          (when-let [xmsiz (:xmsiz opts)]
+            (check (.setxmsiz hdb xmsiz)))
+          (check (.open hdb path (oflags opts)))
+          (swap! open-paths conj path)))))
   (close [this]
-    (.close hdb))
+    (let [path (:path opts)]
+      (when (@open-paths path)
+        (.close hdb)
+        (swap! open-paths disj path))))
   (sync! [this]
     (.sync  hdb))
   (optimize! [this]
     (.optimize hdb))
   (unique-id [this]
-    (.path hdb))
+    (:path opts))
 
   (fetch [this key]
-    (.get  hdb ^bytes (key-format key)))
+    (.get  hdb ^bytes key))
   (len [this key]
-    (.vsiz hdb ^bytes (key-format key)))
+    (.vsiz hdb ^bytes key))
   (exists? [this key]
-    (not (= -1 (masai.db/len this key))))
+    (not (= -1 (flatland.masai.db/len this key))))
   (key-seq [this]
     (.iterinit hdb)
     (key-seq* hdb))
 
   (add! [this key val]
-    (check (.putkeep hdb ^bytes (key-format key) (bytes val))))
+    (check (.putkeep hdb ^bytes key (bytes val))))
   (put! [this key val]
-    (check (.put hdb ^bytes (key-format key) (bytes val))))
+    (check (.put hdb ^bytes key (bytes val))))
   (append! [this key val]
-    (check (.putcat  hdb ^bytes (key-format key) (bytes val))))
+    (check (.putcat  hdb ^bytes key (bytes val))))
   (inc! [this key i]
-    (.addint hdb ^bytes (key-format key) ^Integer i))
+    (.addint hdb ^bytes key ^Integer i))
 
   (delete! [db key]
-    (check (.out hdb ^bytes (key-format key))))
+    (check (.out hdb ^bytes key)))
   (truncate! [db]
     (check (.vanish hdb))))
 
 (extend DB
-  retro.core/Transactional
+  flatland.retro.core/Transactional
   (tokyo/transaction-impl DB hdb HDB))
 
 (defn make
   "Create an instance of DB with Tokyo Cabinet Hash as the backend."
   [& opts]
-  (let [{:keys [key-format]
-         :or {key-format (fn [^String s] (.getBytes s))}
-         :as opts}
-        (into-map opts)]
-    (DB. (HDB.) opts key-format)))
+  (DB. (HDB.) (into-map opts)))

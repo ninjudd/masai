@@ -1,7 +1,7 @@
-(ns masai.tokyo-common
-  (:use [useful.utils :only [thread-local]])
-  (:require [masai.db :as db]
-            [retro.core :as retro]))
+(ns flatland.masai.tokyo-common
+  (:use [flatland.useful.utils :only [thread-local]])
+  (:require [flatland.masai.db :as db]
+            [flatland.retro.core :as retro]))
 
 ;; I hate this so much. But we need per-thread mutable state, without the safety of binding
 (def transaction-depths (thread-local (atom {})))

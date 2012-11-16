@@ -1,6 +1,7 @@
-(ns masai.db
-  (:require [masai.cursor :as c])
-  (:use [useful.macro :only [macro-do]]))
+(ns flatland.masai.db
+  (:require [flatland.masai.cursor :as c]
+            [flatland.useful.macro :refer [macro-do]]
+            [flatland.useful.io :refer [compare-bytes]]))
 
 ;; Instead of having separate, incompatible libraries to interface with
 ;; different key-value stores, Masai opts to define a common and simple
@@ -28,6 +29,8 @@
     "Get the length of a record from the database. Returns -1 if record is non-existent.")
   (exists? [db key]
     "Check to see if a record exists in the database.")
+
+  ;; TODO replace with fetch-[key-][r]seq
   (key-seq [db]
     "Get a sequence of all of the keys in the database.")
   (add! [db key val]
@@ -58,38 +61,40 @@
     "Return a Cursor on this db, starting at key. The key may be an actual string key, or one of
     the special keywords :first or :last"))
 
-;; have to do this as a macro instead of a function-generator, because protocol functions
-;; (like c/next) don't behave well when closed over. instead, this macro includes them as
-;; literals so that the compiler knows how to handle them.
-(macro-do [name next-fn default-key]
-  `(let [default# ~default-key]
-     (defn ~name [db# key#]
-       (seq (->> (cursor db# (or key# default#))
-                 (iterate ~next-fn)
-                 (take-while (complement nil?))
-                 (map (juxt #(String. (c/key %) "UTF-8") c/val))))))
-  fetch-seq c/next :first,
-  fetch-rseq c/prev :last)
-
 (letfn [(include [test key]
-          (fn [[k]] (test (compare k key) 0)))
-        (subseq* ;; A helper for creating a subseq or rsubseq using fetch-seq and fetch-rseq.
-          ([fetch-seq bounded? db test key]
-             (seq (let [include? (include test key)]
-                    (if (bounded? test)
-                      (drop-while (complement include?) (fetch-seq db key))
-                      (take-while include?              (fetch-seq db nil))))))
-          ([fetch-seq db start-test start-key end-test end-key]
-             (seq (->> (fetch-seq db start-key)
-                       (drop-while (complement (include start-test start-key)))
-                       (take-while (include end-test end-key))))))]
-  (defn fetch-subseq
-    ([db test key]
-       (subseq* fetch-seq #{>= >} db test key))
-    ([db start-test start end-test end]
-       (subseq* fetch-seq db start-test start end-test end)))
-  (defn fetch-rsubseq
-    ([db test key]
-       (subseq* fetch-rseq #{<= <} db test key))
-    ([db start-test start end-test end]
-       (subseq* fetch-rseq db end-test end start-test start))))
+          (if key
+            (fn [[k]] (test (compare-bytes k key) 0))
+            (constantly true)))]
+  (defn- subseq-fn
+    [& {:keys [reverse? keys-only?]}]
+    (let [val-fn (apply juxt #'c/key (when-not keys-only? [#'c/val]))
+          [bounded? default next-fn] (if reverse?
+                                       [#{<= <} :last  #'c/prev]
+                                       [#{>= >} :first #'c/next])
+          fetch-seq (fn [db key]
+                      (->> (cursor db (or key default))
+                           (iterate next-fn)
+                           (take-while (complement nil?))
+                           (map val-fn)))
+          val-seq (if keys-only?
+                    (comp seq (partial map first))
+                    seq)]
+      (fn
+        ([db start-test start]
+           (val-seq (let [include? (include start-test start)]
+                      (if (bounded? start-test)
+                        (drop-while (complement include?) (fetch-seq db start))
+                        (take-while include?              (fetch-seq db nil))))))
+        ([db start-test start end-test end]
+           (let [[start-test start end-test end]
+                 (if reverse?
+                   [end-test end start-test start]
+                   [start-test start end-test end])]
+             (val-seq (->> (fetch-seq db start)
+                           (drop-while (complement (include start-test start)))
+                           (take-while (include end-test end))))))))))
+
+(def fetch-subseq      (subseq-fn))
+(def fetch-key-subseq  (subseq-fn :keys-only? true))
+(def fetch-rsubseq     (subseq-fn :reverse? true))
+(def fetch-key-rsubseq (subseq-fn :reverse? true :keys-only? true))

@@ -1,7 +1,7 @@
-(ns masai.redis
-  (:use [useful.map :only [into-map]]
+(ns flatland.masai.redis
+  (:use [flatland.useful.map :only [into-map]]
         [clojure.stacktrace :only [root-cause]])
-  (:require masai.db)
+  (:require flatland.masai.db)
   (:import redis.clients.jedis.BinaryJedis))
 
 (defn i-to-b
@@ -17,17 +17,17 @@
   [db & body]
   `(if (.isConnected ~db) ~@body))
 
-(deftype DB [^BinaryJedis rdb opts key-format]
-  masai.db/EphemeralDB
+(deftype DB [^BinaryJedis rdb opts]
+  flatland.masai.db/EphemeralDB
 
   (add-expiry! [db key val exp]
-    (masai.db/add! db key val)
+    (flatland.masai.db/add! db key val)
     (.expire rdb key exp))
 
   (put-expiry! [db key val exp]
     (.setex rdb key exp (bytes val)))
 
-  masai.db/DB
+  flatland.masai.db/DB
 
   (open [db]
     (when-let [pass (:password opts)]
@@ -51,34 +51,34 @@
 
   (fetch [db key]
     (if-connected rdb
-      (.get rdb (key-format key))))
+      (.get rdb key)))
 
   (len [db key]
     (if-connected rdb
-      (if-let [record (masai.db/fetch db key)]
+      (if-let [record (flatland.masai.db/fetch db key)]
         (count record)
         -1)
       -1))
 
   (exists? [db key]
     (if-connected rdb
-      (.exists rdb (key-format key))
+      (.exists rdb key)
       false))
 
   (key-seq [db]
-    (set (.keys rdb "*")))
+    (set (.keys rdb (.getBytes "*"))))
 
-  (add!    [db key val] (i-to-b (.setnx  rdb (key-format key) (bytes val))))
-  (put!    [db key val] (i-to-b (.set    rdb (key-format key) (bytes val))))
-  (append! [db key val] (i-to-b (.append rdb (key-format key) (bytes val))))
+  (add!    [db key val] (i-to-b (.setnx  rdb key (bytes val))))
+  (put!    [db key val] (i-to-b (.set    rdb key (bytes val))))
+  (append! [db key val] (i-to-b (.append rdb key (bytes val))))
 
   (inc! [db key i]
     (if (> 0 i)
-      (.decrBy rdb (key-format key) (long (Math/abs ^Integer i)))
-      (.incrBy rdb (key-format key) (long i))))
+      (.decrBy rdb key (long (Math/abs ^Integer i)))
+      (.incrBy rdb key (long i))))
 
   (delete! [db key]
-    (i-to-b (.del rdb (into-array [(key-format key)]))))
+    (i-to-b (.del rdb (into-array [key]))))
 
   (truncate! [db]
     (= "OK" (.flushDB rdb))))
@@ -86,13 +86,11 @@
 (defn make
   "Create an instance of DB with redis as the backend."
   [& opts]
-  (let [{:keys [host port timeout key-format]
-         :or {host "localhost" port 6379
-              key-format (fn [^String s] (bytes (.getBytes s)))}
-         :as opts}
-         (into-map opts)]
+  (let [{:keys [host port timeout]
+         :or {host "localhost" port 6379}
+         :as opts} (into-map opts)]
     (DB.
      (if timeout
        (BinaryJedis. host port timeout)
        (BinaryJedis. host port))
-     opts key-format)))
+     opts)))
