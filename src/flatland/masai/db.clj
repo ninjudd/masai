@@ -29,6 +29,8 @@
     "Get the length of a record from the database. Returns -1 if record is non-existent.")
   (exists? [db key]
     "Check to see if a record exists in the database.")
+
+  ;; TODO replace with fetch-[key-][r]seq
   (key-seq [db]
     "Get a sequence of all of the keys in the database.")
   (add! [db key val]
@@ -60,7 +62,9 @@
     the special keywords :first or :last"))
 
 (letfn [(include [test key]
-          (fn [[k]] (test (compare-bytes k key) 0)))]
+          (if key
+            (fn [[k]] (test (compare-bytes k key) 0))
+            (constantly true)))]
   (defn- subseq-fn
     [& {:keys [reverse? keys-only?]}]
     (let [val-fn (apply juxt #'c/key (when-not keys-only? [#'c/val]))
