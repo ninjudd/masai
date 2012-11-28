@@ -11,7 +11,7 @@
              :dev {:dependencies [[org.flatland/tokyocabinet "1.24.6"]
                                   [spy/memcached "2.4rc1"]
                                   [org.clojars.raynes/jedis "2.0.0-SNAPSHOT"]]}}
-  :aliases {"testall" ["with-profile" "dev,default:dev,1.3,default:dev,1.5,default" "test"]}
+  :aliases {"testall" ["with-profile" "dev,default:dev,1.5,default" "test"]}
   :repositories {"sonatype-snapshots" {:url "http://oss.sonatype.org/content/repositories/snapshots"
                                        :snapshots true
                                        :releases {:checksum :fail :update :always}}})
